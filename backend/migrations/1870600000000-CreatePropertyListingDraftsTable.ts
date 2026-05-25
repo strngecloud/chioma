@@ -4,18 +4,24 @@ export class CreatePropertyListingDraftsTable1870600000000 implements MigrationI
   name = 'CreatePropertyListingDraftsTable1870600000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `CREATE TABLE "property_listing_drafts" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "landlordId" uuid NOT NULL, "data" jsonb NOT NULL DEFAULT '{}', "currentStep" integer NOT NULL DEFAULT '1', "completedSteps" jsonb NOT NULL DEFAULT '[]', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "expiresAt" TIMESTAMP, CONSTRAINT "PK_ba2fcb38ff43f916a8662af51cf" PRIMARY KEY ("id"))`,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_2f1098f5325b4ed3facba21625" ON "property_listing_drafts" ("landlordId") `,
-    );
+    await queryRunner.query(`
+      DO $$ BEGIN
+        CREATE TABLE "property_listing_drafts" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "landlordId" uuid NOT NULL, "data" jsonb NOT NULL DEFAULT '{}', "currentStep" integer NOT NULL DEFAULT '1', "completedSteps" jsonb NOT NULL DEFAULT '[]', "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "expiresAt" TIMESTAMP, CONSTRAINT "PK_ba2fcb38ff43f916a8662af51cf" PRIMARY KEY ("id"));
+      EXCEPTION WHEN duplicate_table THEN null;
+      END $$;
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        CREATE INDEX IF NOT EXISTS "IDX_2f1098f5325b4ed3facba21625" ON "property_listing_drafts" ("landlordId");
+      EXCEPTION WHEN undefined_column THEN null;
+      END $$;
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `DROP INDEX "public"."IDX_2f1098f5325b4ed3facba21625"`,
+      `DROP INDEX IF EXISTS "public"."IDX_2f1098f5325b4ed3facba21625"`,
     );
-    await queryRunner.query(`DROP TABLE "property_listing_drafts"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "property_listing_drafts"`);
   }
 }
