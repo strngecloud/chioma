@@ -6,10 +6,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['**/__tests__/**/*.test.{ts,tsx}'],
-    setupFiles: ['test/setup.ts'],
-    env: {
-      NODE_ENV: 'production',
-    },
+    setupFiles: ['test/setup.ts', 'test/setup-tests.ts'],
   },
   resolve: {
     alias: {

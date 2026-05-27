@@ -31,6 +31,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/store/authStore';
 import { apiClient } from '@/lib/api-client';
+import { useModal } from '@/contexts/ModalContext';
+import { processStellarRentPayment } from '@/lib/contracts/soroban-client';
 import {
   type DashboardPayment,
   loadTenantPayments,
@@ -59,6 +61,7 @@ const PAGE_SIZE = 6;
 
 export default function TenantPaymentsPage() {
   const { user } = useAuth();
+  const { openModal } = useModal();
   const [payments, setPayments] = useState<DashboardPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -248,6 +251,32 @@ export default function TenantPaymentsPage() {
     }
   };
 
+  const handlePayRent = () => {
+    const primary = outgoingCompleted[0] ?? payments[0];
+    openModal('payment', {
+      agreementId: primary?.agreementId ?? '',
+      amount: monthlyRent,
+      onSubmit: async (data: {
+        agreementId: string;
+        amount: number;
+        paymentMethod: string;
+      }) => {
+        if (data.paymentMethod === 'crypto') {
+          await processStellarRentPayment({
+            agreementId: data.agreementId,
+            amount: data.amount,
+          });
+        } else {
+          await apiClient.post('/payments', {
+            agreementId: data.agreementId,
+            amount: data.amount,
+            paymentMethod: data.paymentMethod,
+          });
+        }
+      },
+    });
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -265,7 +294,15 @@ export default function TenantPaymentsPage() {
               dispute follow-up.
             </p>
           </div>
-          <div className="flex w-full flex-col gap-2 lg:w-auto lg:flex-row">
+          <div className="flex w-full flex-col gap-2 lg:w-auto lg:flex-row lg:items-center">
+            <button
+              type="button"
+              onClick={handlePayRent}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              <HandCoins className="h-4 w-4" />
+              Pay rent
+            </button>
             <div className="relative w-full lg:w-72">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-300/40" />
               <input

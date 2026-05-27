@@ -267,27 +267,59 @@ export class SearchService {
       return qb;
     };
 
-    const [typeFacets, cityFacets, amenityCounts] = await Promise.all([
-      baseQb()
-        .select('property.type', 'type')
-        .addSelect('COUNT(*)', 'count')
-        .groupBy('property.type')
-        .getRawMany(),
-      baseQb()
-        .select('property.city', 'city')
-        .addSelect('COUNT(*)', 'count')
-        .groupBy('property.city')
-        .orderBy('count', 'DESC')
-        .limit(10)
-        .getRawMany(),
-      baseQb()
-        .select([
-          'SUM(CASE WHEN property.is_furnished = true THEN 1 ELSE 0 END) as furnished',
-          'SUM(CASE WHEN property.has_parking = true THEN 1 ELSE 0 END) as parking',
-          'SUM(CASE WHEN property.pets_allowed = true THEN 1 ELSE 0 END) as pets_allowed',
-        ])
-        .getRawOne(),
-    ]);
+    const priceRangeDefs = [
+      { label: 'Under $500', min: 0, max: 500 },
+      { label: '$500-$1000', min: 500, max: 1000 },
+      { label: '$1000-$2000', min: 1000, max: 2000 },
+      { label: 'Over $2000', min: 2000, max: 999999 },
+    ];
+
+    const [typeFacets, cityFacets, amenityCounts, priceRangeCounts] =
+      await Promise.all([
+        baseQb()
+          .select('property.type', 'type')
+          .addSelect('COUNT(*)', 'count')
+          .groupBy('property.type')
+          .getRawMany(),
+        baseQb()
+          .select('property.city', 'city')
+          .addSelect('COUNT(*)', 'count')
+          .groupBy('property.city')
+          .orderBy('count', 'DESC')
+          .limit(10)
+          .getRawMany(),
+        baseQb()
+          .select([
+            'SUM(CASE WHEN property.is_furnished = true THEN 1 ELSE 0 END) as furnished',
+            'SUM(CASE WHEN property.has_parking = true THEN 1 ELSE 0 END) as parking',
+            'SUM(CASE WHEN property.pets_allowed = true THEN 1 ELSE 0 END) as pets_allowed',
+          ])
+          .getRawOne(),
+        // Count properties in each price bucket in a single query
+        baseQb()
+          .select(
+            `SUM(CASE WHEN CAST(property.price AS float) < 500 THEN 1 ELSE 0 END)`,
+            'range0',
+          )
+          .addSelect(
+            `SUM(CASE WHEN CAST(property.price AS float) >= 500 AND CAST(property.price AS float) < 1000 THEN 1 ELSE 0 END)`,
+            'range1',
+          )
+          .addSelect(
+            `SUM(CASE WHEN CAST(property.price AS float) >= 1000 AND CAST(property.price AS float) < 2000 THEN 1 ELSE 0 END)`,
+            'range2',
+          )
+          .addSelect(
+            `SUM(CASE WHEN CAST(property.price AS float) >= 2000 THEN 1 ELSE 0 END)`,
+            'range3',
+          )
+          .getRawOne(),
+      ]);
+
+    const priceRanges = priceRangeDefs.map((def, i) => ({
+      ...def,
+      count: parseInt(priceRangeCounts?.[`range${i}`] ?? '0') || 0,
+    }));
 
     return {
       types: typeFacets.map((r) => ({
@@ -298,12 +330,7 @@ export class SearchService {
         city: r.city,
         count: parseInt(r.count),
       })),
-      priceRanges: [
-        { label: 'Under $500', min: 0, max: 500, count: 0 },
-        { label: '$500-$1000', min: 500, max: 1000, count: 0 },
-        { label: '$1000-$2000', min: 1000, max: 2000, count: 0 },
-        { label: 'Over $2000', min: 2000, max: 999999, count: 0 },
-      ],
+      priceRanges,
       amenities: {
         furnished: parseInt(amenityCounts?.furnished) || 0,
         parking: parseInt(amenityCounts?.parking) || 0,

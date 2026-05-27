@@ -14,12 +14,16 @@ pub mod events;
 pub mod rate_limit;
 pub mod storage;
 pub mod types;
+pub mod upgrade;
 
 #[cfg(test)]
 mod tests;
 
 #[cfg(test)]
 mod tests_rate_limit;
+
+#[cfg(test)]
+mod tests_rbac;
 
 // Re-export public APIs
 pub use access::AccessControl;

@@ -49,7 +49,7 @@ export default function HostLayout({
                 />
               </div>
               <NotificationBell
-                viewAllHref="/dashboard/notifications"
+                viewAllHref="/user/notifications"
                 size={20}
                 className="text-blue-200"
               />

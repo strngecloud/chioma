@@ -1071,6 +1071,12 @@ export class PaymentService {
       schedule.status = PaymentScheduleStatus.FAILED;
       schedule.lastError = 'Payment method is missing';
       await this.paymentScheduleRepository.save(schedule);
+      await this.notificationsService.notify(
+        schedule.userId,
+        'Recurring payment failed',
+        `We could not process your scheduled payment. ${schedule.lastError}`.trim(),
+        'PAYMENT_FAILED',
+      );
       throw new BadRequestException('Payment method is missing');
     }
 

@@ -39,6 +39,8 @@ const mockDocuments: Document[] = [
     uploadedAt: new Date('2024-03-15T10:30:00').toISOString(),
     category: 'lease',
     description: 'Annual lease agreement for property at 123 Main Street',
+    thumbnailUrl:
+      'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=320&q=80',
   },
   {
     id: '2',
@@ -51,6 +53,8 @@ const mockDocuments: Document[] = [
     uploadedAt: new Date('2024-03-10T14:20:00').toISOString(),
     category: 'inspection',
     description: 'Move-in inspection report with photos',
+    thumbnailUrl:
+      'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=320&q=80',
   },
   {
     id: '3',
@@ -63,6 +67,8 @@ const mockDocuments: Document[] = [
     uploadedAt: new Date('2024-03-01T09:15:00').toISOString(),
     category: 'payment',
     description: 'Rent payment receipt for March 2024',
+    thumbnailUrl:
+      'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=320&q=80',
   },
 ];
 

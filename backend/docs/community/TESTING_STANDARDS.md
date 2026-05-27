@@ -160,4 +160,3 @@ Common anti-patterns:
 - [ ] Test names clearly describe behavior and condition.
 - [ ] Mocks and fixtures are deterministic and scoped.
 - [ ] Performance impact is assessed for high-risk paths.
-

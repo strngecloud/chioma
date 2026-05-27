@@ -56,7 +56,9 @@ import { InquiriesModule } from './modules/inquiries/inquiries.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { LockModule } from './common/lock';
 import { IdempotencyModule } from './common/idempotency';
+import { ResilienceModule } from './common/resilience';
 import { FraudModule } from './modules/fraud/fraud.module';
+import { TransactionModule } from './modules/transactions/transaction.module';
 
 const appLogger = new Logger('AppModule');
 
@@ -69,6 +71,7 @@ const appLogger = new Logger('AppModule');
     LoggerModule,
     LockModule,
     IdempotencyModule,
+    ResilienceModule,
     require('./common/services/encryption.module').EncryptionModule,
     process.env.NODE_ENV === 'test'
       ? CacheModule.register({
@@ -186,16 +189,17 @@ const appLogger = new Logger('AppModule');
           namingStrategy: new SnakeNamingStrategy(),
           entities: [__dirname + '/modules/**/*.entity{.ts,.js}'],
           migrations: isTest ? [] : [__dirname + '/migrations/*{.ts,.js}'],
-          synchronize: isTest,
-          logging: process.env.NODE_ENV === 'development',
+          synchronize: false,
+          logging: true,
+          logger: 'advanced-console' as const,
         };
-        appLogger.log('[TypeORM Config] PostgreSQL config');
-        appLogger.debug({
-          type: config.type,
+        console.log('[DEBUG] TypeORM Config:', {
           host: config.host,
           port: config.port,
           username: config.username,
           database: config.database,
+          synchronize: config.synchronize,
+          logging: config.logging,
         });
         return config;
       },
@@ -230,6 +234,7 @@ const appLogger = new Logger('AppModule');
     ReferralModule,
     InquiriesModule,
     AnalyticsModule,
+    TransactionModule,
     ...(process.env.OPENAPI_GENERATE !== 'true' ? [RateLimitingModule] : []),
     // Maintenance module
     require('./modules/maintenance/maintenance.module').MaintenanceModule,
