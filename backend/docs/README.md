@@ -88,6 +88,7 @@ The API will be available at `http://localhost:5000/api` and Swagger UI at `http
 | [Dependency Graph](./architecture/DEPENDENCY_GRAPH.md)                     | Module dependency overview                    |
 | [Architecture Documentation](./architecture/ARCHITECTURE_DOCUMENTATION.md) | System architecture, layers, integrations     |
 | [Scalability & Performance](./architecture/scalability-and-performance.md) | Horizontal scaling, caching layers, DB tuning |
+| [Performance Tuning Guidelines](./PERFORMANCE_TUNING_GUIDELINES.md)       | Operational tuning for latency, DB, cache, queues |
 
 **Key design decisions:**
 

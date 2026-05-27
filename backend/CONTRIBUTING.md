@@ -1164,6 +1164,8 @@ export class MyService {
 
 ### Performance
 
+See [Performance Tuning Guidelines](./docs/PERFORMANCE_TUNING_GUIDELINES.md) for operational tuning (database, cache, queues, observability).
+
 1. **Database Queries**
    - Use indexes on frequently queried columns
    - Avoid N+1 queries with eager loading
