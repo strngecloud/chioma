@@ -8,6 +8,11 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { User, UserRole } from '../users/entities/user.entity';
 
+import {
+  AuthenticationError,
+  DuplicateEntryError,
+  ValidationError,
+} from '../../common/errors/domain-errors';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../notifications/email.service';
@@ -205,7 +210,7 @@ describe('AuthService', () => {
       );
     });
 
-    it('should throw ConflictException if email already exists', async () => {
+    it('should throw DuplicateEntryError if email already exists', async () => {
       const registerDto: RegisterDto = {
         email: 'test@example.com',
         password: 'SecurePass123!',
@@ -217,7 +222,7 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
 
       await expect(service.register(registerDto)).rejects.toThrow(
-        ConflictException,
+        DuplicateEntryError,
       );
     });
   });
@@ -254,11 +259,11 @@ describe('AuthService', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
 
       await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
+        AuthenticationError,
       );
     });
 
-    it('should throw UnauthorizedException for non-existent user', async () => {
+    it('should throw AuthenticationError for non-existent user', async () => {
       const loginDto: LoginDto = {
         email: 'nonexistent@example.com',
         password: 'password123',
@@ -267,11 +272,11 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
+        AuthenticationError,
       );
     });
 
-    it('should throw UnauthorizedException for inactive account', async () => {
+    it('should throw AuthenticationError for inactive account', async () => {
       const loginDto: LoginDto = {
         email: 'test@example.com',
         password: 'Password123!',
@@ -283,7 +288,7 @@ describe('AuthService', () => {
       });
 
       await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
+        AuthenticationError,
       );
     });
 
@@ -302,7 +307,7 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(lockedUser);
 
       await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
+        AuthenticationError,
       );
     });
   });
@@ -377,7 +382,7 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       await expect(service.resetPassword(resetPasswordDto)).rejects.toThrow(
-        BadRequestException,
+        ValidationError,
       );
     });
 
@@ -397,7 +402,7 @@ describe('AuthService', () => {
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
 
       await expect(service.resetPassword(resetPasswordDto)).rejects.toThrow(
-        BadRequestException,
+        ValidationError,
       );
     });
   });
@@ -433,7 +438,7 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       await expect(service.verifyEmail('invalid-token')).rejects.toThrow(
-        BadRequestException,
+        ValidationError,
       );
     });
   });
@@ -467,7 +472,7 @@ describe('AuthService', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       await expect(service.validateUserById('non-existent-id')).rejects.toThrow(
-        UnauthorizedException,
+        AuthenticationError,
       );
     });
   });
