@@ -23,7 +23,13 @@ describe('Content Negotiation (e2e)', () => {
     );
 
     app.setGlobalPrefix('api', {
-      exclude: ['health', 'health/detailed', 'security.txt', '.well-known', 'developer-portal'],
+      exclude: [
+        'health',
+        'health/detailed',
+        'security.txt',
+        '.well-known',
+        'developer-portal',
+      ],
     });
 
     await app.init();
@@ -66,7 +72,10 @@ describe('Content Negotiation (e2e)', () => {
     it('should handle multiple media types in Accept header', async () => {
       const res = await request(app.getHttpServer())
         .get('/health')
-        .set('Accept', 'text/html, application/xhtml+xml, application/json;q=0.9')
+        .set(
+          'Accept',
+          'text/html, application/xhtml+xml, application/json;q=0.9',
+        )
         .expect(200);
 
       expect(res.body).toBeDefined();
@@ -87,7 +96,10 @@ describe('Content Negotiation (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/feedback')
         .set('Content-Type', 'application/json')
-        .send({ message: 'Test feedback message long enough for validation', type: 'general' });
+        .send({
+          message: 'Test feedback message long enough for validation',
+          type: 'general',
+        });
 
       expect([400, 401, 403, 422]).toContain(res.status);
       expect(res.headers['content-type']).toMatch(/application\/json/);
@@ -103,9 +115,7 @@ describe('Content Negotiation (e2e)', () => {
     });
 
     it('should respond with correct Content-Type header for API responses', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       expect(res.headers['content-type']).toMatch(/application\/json/);
     });
@@ -120,9 +130,7 @@ describe('Content Negotiation (e2e)', () => {
     });
 
     it('should set charset in Content-Type response header', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       expect(res.headers['content-type']).toMatch(/charset=utf-8/i);
     });
@@ -130,9 +138,7 @@ describe('Content Negotiation (e2e)', () => {
 
   describe('Format Selection', () => {
     it('should default to JSON format for API responses', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       expect(res.headers['content-type']).toMatch(/application\/json/);
       expect(() => JSON.parse(JSON.stringify(res.body))).not.toThrow();
@@ -265,9 +271,7 @@ describe('Content Negotiation (e2e)', () => {
 
   describe('Response Content-Type Accuracy', () => {
     it('should set Vary: Accept header to indicate content negotiation is active', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       const varyHeader = res.headers['vary'];
       if (varyHeader) {
@@ -276,9 +280,7 @@ describe('Content Negotiation (e2e)', () => {
     });
 
     it('should include content-length or transfer-encoding in response', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       const hasContentLength = 'content-length' in res.headers;
       const hasTransferEncoding = 'transfer-encoding' in res.headers;
@@ -286,9 +288,7 @@ describe('Content Negotiation (e2e)', () => {
     });
 
     it('should return structured JSON body for health check', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       expect(res.body).toBeDefined();
       expect(typeof res.body).toBe('object');

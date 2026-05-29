@@ -25,7 +25,14 @@ describe('Metrics Collection (e2e)', () => {
     );
 
     app.setGlobalPrefix('api', {
-      exclude: ['health', 'health/detailed', 'security.txt', '.well-known', 'developer-portal', 'metrics'],
+      exclude: [
+        'health',
+        'health/detailed',
+        'security.txt',
+        '.well-known',
+        'developer-portal',
+        'metrics',
+      ],
     });
 
     await app.init();
@@ -56,15 +63,22 @@ describe('Metrics Collection (e2e)', () => {
 
     it('should increment request counter after HTTP requests', async () => {
       const beforeMetrics = await metricsService.getMetrics();
-      const beforeMatch = beforeMetrics.match(/http_requests_total{[^}]*}\s+([\d.]+)/);
+      const beforeMatch = beforeMetrics.match(
+        /http_requests_total{[^}]*}\s+([\d.]+)/,
+      );
       const beforeCount = beforeMatch ? parseFloat(beforeMatch[1]) : 0;
 
       await request(app.getHttpServer()).get('/health').expect(200);
       await request(app.getHttpServer()).get('/health').expect(200);
 
       const afterMetrics = await metricsService.getMetrics();
-      const afterMatches = [...afterMetrics.matchAll(/http_requests_total{[^}]*}\s+([\d.]+)/g)];
-      const afterTotal = afterMatches.reduce((sum, m) => sum + parseFloat(m[1]), 0);
+      const afterMatches = [
+        ...afterMetrics.matchAll(/http_requests_total{[^}]*}\s+([\d.]+)/g),
+      ];
+      const afterTotal = afterMatches.reduce(
+        (sum, m) => sum + parseFloat(m[1]),
+        0,
+      );
 
       expect(afterTotal).toBeGreaterThan(beforeCount);
     });
@@ -79,7 +93,9 @@ describe('Metrics Collection (e2e)', () => {
 
     it('should track requests by status class label', async () => {
       await request(app.getHttpServer()).get('/health').expect(200);
-      await request(app.getHttpServer()).get('/api/nonexistent-metrics-404').expect(404);
+      await request(app.getHttpServer())
+        .get('/api/nonexistent-metrics-404')
+        .expect(404);
 
       const metricsOutput = await metricsService.getMetrics();
       expect(metricsOutput).toContain('status_class=');
@@ -87,7 +103,9 @@ describe('Metrics Collection (e2e)', () => {
 
     it('should distinguish between 2xx and 4xx status classes', async () => {
       await request(app.getHttpServer()).get('/health').expect(200);
-      await request(app.getHttpServer()).get('/api/unknown-endpoint-xyz').expect(404);
+      await request(app.getHttpServer())
+        .get('/api/unknown-endpoint-xyz')
+        .expect(404);
 
       const metricsOutput = await metricsService.getMetrics();
       expect(metricsOutput).toContain('2xx');
@@ -133,7 +151,9 @@ describe('Metrics Collection (e2e)', () => {
       ]);
 
       const metricsOutput = await metricsService.getMetrics();
-      const countMatch = metricsOutput.match(/http_request_duration_ms_count{[^}]*}\s+([\d.]+)/);
+      const countMatch = metricsOutput.match(
+        /http_request_duration_ms_count{[^}]*}\s+([\d.]+)/,
+      );
       if (countMatch) {
         expect(parseFloat(countMatch[1])).toBeGreaterThan(0);
       }
@@ -155,17 +175,17 @@ describe('Metrics Collection (e2e)', () => {
       await request(app.getHttpServer()).get('/api/error-rate-404').expect(404);
 
       const metricsOutput = await metricsService.getMetrics();
-      const successLines = (metricsOutput.match(/status_class="2xx"/g) || []).length;
-      const errorLines = (metricsOutput.match(/status_class="4xx"/g) || []).length;
+      const successLines = (metricsOutput.match(/status_class="2xx"/g) || [])
+        .length;
+      const errorLines = (metricsOutput.match(/status_class="4xx"/g) || [])
+        .length;
 
       expect(successLines).toBeGreaterThan(0);
       expect(errorLines).toBeGreaterThan(0);
     });
 
     it('should record http_requests_total for failed validation requests', async () => {
-      await request(app.getHttpServer())
-        .post('/api/auth/login')
-        .send({});
+      await request(app.getHttpServer()).post('/api/auth/login').send({});
 
       const metricsOutput = await metricsService.getMetrics();
       expect(metricsOutput).toContain('http_requests_total');

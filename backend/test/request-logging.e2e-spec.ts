@@ -10,7 +10,11 @@ import { AppModule } from '../src/app.module';
 
 describe('Request Logging (e2e)', () => {
   let app: INestApplication;
-  const logMessages: Array<{ level: string; message: string; context?: unknown }> = [];
+  const logMessages: Array<{
+    level: string;
+    message: string;
+    context?: unknown;
+  }> = [];
 
   const captureLogger: LoggerService = {
     log: (message: string, context?: unknown) =>
@@ -43,7 +47,13 @@ describe('Request Logging (e2e)', () => {
     );
 
     app.setGlobalPrefix('api', {
-      exclude: ['health', 'health/detailed', 'security.txt', '.well-known', 'developer-portal'],
+      exclude: [
+        'health',
+        'health/detailed',
+        'security.txt',
+        '.well-known',
+        'developer-portal',
+      ],
     });
 
     await app.init();
@@ -59,9 +69,7 @@ describe('Request Logging (e2e)', () => {
 
   describe('Request Logging with Headers', () => {
     it('should generate a correlation/request ID per request', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       expect(res.headers['x-request-id']).toBeDefined();
       expect(typeof res.headers['x-request-id']).toBe('string');
@@ -86,7 +94,9 @@ describe('Request Logging (e2e)', () => {
 
       expect(res1.headers['x-request-id']).toBeDefined();
       expect(res2.headers['x-request-id']).toBeDefined();
-      expect(res1.headers['x-request-id']).not.toBe(res2.headers['x-request-id']);
+      expect(res1.headers['x-request-id']).not.toBe(
+        res2.headers['x-request-id'],
+      );
     });
 
     it('should log incoming request method and URL', async () => {
@@ -130,9 +140,7 @@ describe('Request Logging (e2e)', () => {
     });
 
     it('should log 4xx error responses at warn level', async () => {
-      await request(app.getHttpServer())
-        .post('/api/auth/login')
-        .send({});
+      await request(app.getHttpServer()).post('/api/auth/login').send({});
 
       const hasWarnOrError = logMessages.some(
         (m) => m.level === 'warn' || m.level === 'error',

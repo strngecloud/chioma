@@ -23,7 +23,13 @@ describe('Request Tracing (e2e)', () => {
     );
 
     app.setGlobalPrefix('api', {
-      exclude: ['health', 'health/detailed', 'security.txt', '.well-known', 'developer-portal'],
+      exclude: [
+        'health',
+        'health/detailed',
+        'security.txt',
+        '.well-known',
+        'developer-portal',
+      ],
     });
 
     await app.init();
@@ -35,18 +41,14 @@ describe('Request Tracing (e2e)', () => {
 
   describe('Trace ID Generation and Propagation', () => {
     it('should attach a request ID to every response', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       expect(res.headers['x-request-id']).toBeDefined();
       expect(res.headers['x-request-id'].length).toBeGreaterThan(0);
     });
 
     it('should generate UUID-formatted trace IDs by default', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       const requestId = res.headers['x-request-id'];
       const uuidRegex =
@@ -100,18 +102,22 @@ describe('Request Tracing (e2e)', () => {
 
   describe('Span Creation and Tracking', () => {
     it('should process requests end-to-end without tracing errors', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       expect(res.body).toBeDefined();
     });
 
     it('should handle concurrent requests with isolated trace contexts', async () => {
       const responses = await Promise.all([
-        request(app.getHttpServer()).get('/health').set('x-request-id', 'span-1'),
-        request(app.getHttpServer()).get('/health').set('x-request-id', 'span-2'),
-        request(app.getHttpServer()).get('/health').set('x-request-id', 'span-3'),
+        request(app.getHttpServer())
+          .get('/health')
+          .set('x-request-id', 'span-1'),
+        request(app.getHttpServer())
+          .get('/health')
+          .set('x-request-id', 'span-2'),
+        request(app.getHttpServer())
+          .get('/health')
+          .set('x-request-id', 'span-3'),
       ]);
 
       expect(responses[0].headers['x-request-id']).toBe('span-1');
@@ -241,9 +247,7 @@ describe('Request Tracing (e2e)', () => {
 
   describe('Trace Export', () => {
     it('should complete request processing when OTLP exporter endpoint is unavailable', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       expect(res.body).toBeDefined();
     });
@@ -272,9 +276,7 @@ describe('Request Tracing (e2e)', () => {
     });
 
     it('should handle requests without any trace headers and still respond correctly', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/health')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/health').expect(200);
 
       expect(res.body).toBeDefined();
       expect(res.headers['x-request-id']).toBeDefined();
