@@ -46,7 +46,7 @@ describe('User Authentication Flow Integration (issue #1098)', () => {
         user: {
           id: 'user-1',
           email: 'alice@example.com',
-          role: UserRole.TENANT,
+          role: UserRole.USER,
         },
         accessToken: 'access-token-123',
         refreshToken: 'refresh-token-123',
@@ -57,7 +57,7 @@ describe('User Authentication Flow Integration (issue #1098)', () => {
         password: 'SecurePass123!',
         firstName: 'Alice',
         lastName: 'Smith',
-        role: UserRole.TENANT,
+        role: UserRole.USER,
       });
 
       expect(result.user.email).toBe('alice@example.com');
@@ -99,7 +99,7 @@ describe('User Authentication Flow Integration (issue #1098)', () => {
       mockAuthService.login.mockResolvedValue({
         accessToken: 'access-token-abc',
         refreshToken: 'refresh-token-abc',
-        user: { id: 'user-1', role: UserRole.TENANT },
+        user: { id: 'user-1', role: UserRole.USER },
       });
 
       const result = await mockAuthService.login({
@@ -108,7 +108,7 @@ describe('User Authentication Flow Integration (issue #1098)', () => {
       });
 
       expect(result.accessToken).toBeDefined();
-      expect(result.user.role).toBe(UserRole.TENANT);
+      expect(result.user.role).toBe(UserRole.USER);
     });
 
     it('rejects login with wrong password', async () => {
@@ -172,7 +172,7 @@ describe('User Authentication Flow Integration (issue #1098)', () => {
   });
 
   describe('Role-based access control', () => {
-    const roles = [UserRole.TENANT, UserRole.ADMIN];
+    const roles = [UserRole.USER, UserRole.ADMIN];
 
     it.each(roles)('grants correct permissions for role: %s', async (role) => {
       mockAuthService.validateUser.mockResolvedValue({ id: 'user-1', role });
