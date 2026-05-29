@@ -16,7 +16,7 @@ describe('Audit Logging Integration (e2e)', () => {
   const entityId = 'property-uuid-1';
   const entityType = 'Property';
 
-  const mockAuditLog: AuditLog = {
+  const mockAuditLog = {
     id: 1,
     action: AuditAction.CREATE,
     entity_type: entityType,
@@ -24,7 +24,7 @@ describe('Audit Logging Integration (e2e)', () => {
     old_values: null,
     new_values: { name: 'Test Property' },
     performed_by: userId,
-    performed_by_user: null as any,
+    performed_by_user: null,
     performed_at: new Date(),
     ip_address: '127.0.0.1',
     user_agent: 'test-agent',
@@ -32,7 +32,7 @@ describe('Audit Logging Integration (e2e)', () => {
     error_message: null,
     level: AuditLevel.INFO,
     metadata: null,
-  };
+  } as unknown as AuditLog;
 
   const mockQueryBuilder = {
     leftJoinAndSelect: jest.fn().mockReturnThis(),

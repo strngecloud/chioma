@@ -68,11 +68,14 @@ describe('Blockchain Transaction Integration (e2e)', () => {
 
   const mockAccount: StellarAccount = {
     id: 1,
+    userId: 'user-1',
+    user: null as any,
     publicKey: 'GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGKW7FCPG7HZNZXNUUA8A',
-    encryptedSecretKey: 'encrypted-secret',
+    secretKeyEncrypted: 'encrypted-secret',
+    sequenceNumber: '0',
     accountType: StellarAccountType.USER,
     isActive: true,
-    xlmBalance: '100',
+    balance: '100',
     createdAt: new Date(),
     updatedAt: new Date(),
   } as StellarAccount;
@@ -88,14 +91,15 @@ describe('Blockchain Transaction Integration (e2e)', () => {
     assetCode: 'XLM',
     assetIssuer: null,
     amount: '100',
-    fee: '100',
+    feePaid: 100,
     status: TransactionStatus.PENDING,
     memoType: MemoType.NONE,
     memo: null,
     errorMessage: null,
-    submittedAt: null,
-    confirmedAt: null,
-    envelope: 'mock-xdr',
+    ledger: null,
+    sourceAccount: null,
+    destinationAccount: null,
+    idempotencyKey: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   } as StellarTransaction;
@@ -227,29 +231,29 @@ describe('Blockchain Transaction Integration (e2e)', () => {
       expect(statuses).toContain(TransactionStatus.FAILED);
     });
 
-    it('records submittedAt on submission', async () => {
+    it('records status change on submission', async () => {
       const submitted: StellarTransaction = {
         ...mockTransaction,
         status: TransactionStatus.SUBMITTED,
-        submittedAt: new Date(),
+        updatedAt: new Date(),
       };
       mockTransactionRepository.save.mockResolvedValue(submitted);
 
       const saved = await mockTransactionRepository.save(submitted);
-      expect(saved.submittedAt).toBeDefined();
+      expect(saved.updatedAt).toBeDefined();
       expect(saved.status).toBe(TransactionStatus.SUBMITTED);
     });
 
-    it('records confirmedAt on completion', async () => {
+    it('records status change on completion', async () => {
       const confirmed: StellarTransaction = {
         ...mockTransaction,
         status: TransactionStatus.COMPLETED,
-        confirmedAt: new Date(),
+        updatedAt: new Date(),
       };
       mockTransactionRepository.save.mockResolvedValue(confirmed);
 
       const saved = await mockTransactionRepository.save(confirmed);
-      expect(saved.confirmedAt).toBeDefined();
+      expect(saved.updatedAt).toBeDefined();
       expect(saved.status).toBe(TransactionStatus.COMPLETED);
     });
   });
@@ -263,11 +267,10 @@ describe('Blockchain Transaction Integration (e2e)', () => {
         assetType: AssetType.NATIVE,
         assetCode: 'XLM',
         amount: '50',
-        fee: '100',
+        feePaid: 100,
         status: TransactionStatus.PENDING,
         memoType: MemoType.TEXT,
         memo: 'rent-payment',
-        envelope: 'xdr-string',
       };
 
       mockTransactionRepository.create.mockReturnValue({ id: 10, ...txData });
