@@ -63,6 +63,7 @@ import { FraudModule } from './modules/fraud/fraud.module';
 import { TransactionModule } from './modules/transactions/transaction.module';
 import { ApiVersionModule } from './common/api-versioning/api-version.module';
 import { ResponseTimeInterceptor } from './common/interceptors/response-time.interceptor';
+import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
 
 const appLogger = new Logger('AppModule');
 
@@ -285,6 +286,10 @@ const appLogger = new Logger('AppModule');
     {
       provide: APP_INTERCEPTOR,
       useClass: ResponseTimeInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TimeoutInterceptor,
     },
   ],
 })
