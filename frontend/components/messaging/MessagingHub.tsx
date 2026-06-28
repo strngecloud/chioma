@@ -41,8 +41,17 @@ export function MessagingHub() {
     ? getOtherParticipant(activeRoom, user?.id ?? '')
     : null;
 
+  const connectionBanner = !isConnected && (
+    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs font-medium">
+      <WifiOff size={13} />
+      Connecting to messaging server… Chat will be available once connected.
+    </div>
+  );
+
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex flex-col h-screen bg-white">
+      {connectionBanner}
+      <div className="flex flex-1 min-h-0">
       <div
         className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col shrink-0`}
       >
@@ -144,6 +153,7 @@ export function MessagingHub() {
             </p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
