@@ -23,10 +23,21 @@ interface AuthState {
   walletAddress: string | null;
 }
 
+interface RegisterPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role?: 'user' | 'admin';
+}
+
 interface AuthActions {
   login: (
     email: string,
     password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  register: (
+    payload: RegisterPayload,
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string, user: User) => void;
