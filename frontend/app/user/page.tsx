@@ -130,6 +130,16 @@ export default function UserDashboardOverview() {
     : mockAgreements[0].amount;
   const nextPaymentProperty = activeAgreement?.displayTitle ?? mockAgreements[0].property;
 
+  const previewPayments = apiPayments.length > 0
+    ? apiPayments.slice(0, 2).map((p) => ({
+        id: p.id,
+        property: p.agreement?.property?.title ?? 'Rental payment',
+        amount: `$${(p.amount ?? 0).toLocaleString()}`,
+        date: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '—',
+        previewImage: DASHBOARD_IMAGE_FALLBACK,
+      }))
+    : dashboardPayments;
+
   const agreements =
     apiAgreements.length > 0
       ? apiAgreements.map((a) => ({
