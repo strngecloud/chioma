@@ -169,7 +169,7 @@ describe('rate-limit utils', () => {
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(
         expect.objectContaining({ remaining: 0 }),
-        2000
+        2000,
       );
     });
   });

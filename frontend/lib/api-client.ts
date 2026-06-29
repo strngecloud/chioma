@@ -152,7 +152,10 @@ class ApiClient {
             signal: controller.signal,
           });
 
-          globalRateLimitTracker.updateFromHeaders(response.headers, response.status);
+          globalRateLimitTracker.updateFromHeaders(
+            response.headers,
+            response.status,
+          );
 
           if (!response.ok) {
             this.clearAuthAndRedirectIfNeeded(response.status);

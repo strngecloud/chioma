@@ -5,7 +5,7 @@
 
 export function debounce<T extends (...args: any[]) => void>(
   func: T,
-  waitMs: number
+  waitMs: number,
 ): {
   (...args: Parameters<T>): void;
   cancel: () => void;
@@ -48,7 +48,7 @@ export function debounce<T extends (...args: any[]) => void>(
 
 export function throttle<T extends (...args: any[]) => void>(
   func: T,
-  limitMs: number
+  limitMs: number,
 ): {
   (...args: Parameters<T>): void;
   cancel: () => void;
@@ -115,7 +115,9 @@ class RateLimitTracker {
   }
 
   private notifyListeners(retryAfterMs?: number) {
-    this.listeners.forEach((listener) => listener({ ...this.state }, retryAfterMs));
+    this.listeners.forEach((listener) =>
+      listener({ ...this.state }, retryAfterMs),
+    );
   }
 
   /**
@@ -144,9 +146,13 @@ class RateLimitTracker {
    * Update tracker state based on HTTP headers from a response.
    */
   updateFromHeaders(headers: Headers, status: number) {
-    const remainingStr = headers.get('RateLimit-Remaining') || headers.get('X-RateLimit-Remaining');
-    const resetStr = headers.get('RateLimit-Reset') || headers.get('X-RateLimit-Reset');
-    const limitStr = headers.get('RateLimit-Limit') || headers.get('X-RateLimit-Limit');
+    const remainingStr =
+      headers.get('RateLimit-Remaining') ||
+      headers.get('X-RateLimit-Remaining');
+    const resetStr =
+      headers.get('RateLimit-Reset') || headers.get('X-RateLimit-Reset');
+    const limitStr =
+      headers.get('RateLimit-Limit') || headers.get('X-RateLimit-Limit');
     const retryAfterStr = headers.get('Retry-After');
 
     let updated = false;
