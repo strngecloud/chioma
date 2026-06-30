@@ -298,7 +298,7 @@ export function readDepositDeductions(payment: Payment): DepositDeduction[] {
             : String(deduction.createdAt),
       };
     })
-    .filter((item): item is DepositDeduction => item !== null);
+    .filter((item) => item !== null) as DepositDeduction[];
 }
 
 function downloadReceipt(paymentId: string, receipt: DepositReceipt) {

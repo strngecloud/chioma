@@ -129,7 +129,7 @@ export default function PropertySearchFilters() {
     if (minBudget) newFilters.minPrice = Number(minBudget);
     if (maxBudget) newFilters.maxPrice = Number(maxBudget);
     if (selectedType && selectedType !== 'all') {
-      newFilters.propertyType = selectedType;
+      newFilters.propertyType = selectedType as import('@/types').PropertyType;
     }
     if (activeTags.has('petsAllowed')) newFilters.petsAllowed = true;
     if (activeTags.has('parking')) newFilters.hasParking = true;
@@ -186,7 +186,6 @@ export default function PropertySearchFilters() {
               setShowSuggestions(true);
             }}
             onFocus={() => setShowSuggestions(true)}
-            placeholder="Search by location..."
             data-testid="search-location-input"
             className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder:text-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
           />
@@ -317,9 +316,7 @@ export default function PropertySearchFilters() {
                 ? 'bg-blue-600/30 border-blue-500/50 text-white'
                 : 'bg-slate-800/30 hover:bg-slate-700/50 text-blue-200/70 border-white/5 hover:text-white'
             }`}
-            key={tag}
-            data-testid={`filter-tag-${tag.toLowerCase().replace(/\s+/g, '-')}`}
-            className="bg-slate-800/30 hover:bg-slate-700/50 text-blue-200/70 border border-white/5 px-4 py-2 rounded-xl text-sm transition-all hover:text-white"
+            data-testid={`filter-tag-${tag.filter.toLowerCase().replace(/\s+/g, '-')}`}
           >
             {tag.label}
           </button>
@@ -362,7 +359,6 @@ export default function PropertySearchFilters() {
                           : 'bg-slate-800 border-white/5 text-white hover:bg-blue-600/20'
                       }`}
                       data-testid={`mobile-type-${opt.value}`}
-                      className="bg-slate-800 border border-white/5 py-3 rounded-xl text-white font-medium hover:bg-blue-600/20 transition-all text-xs"
                     >
                       {opt.label}
                     </button>
@@ -432,7 +428,6 @@ export default function PropertySearchFilters() {
 
             <button
               onClick={handleApplyFilters}
-              onClick={() => setIsMobileFiltersOpen(false)}
               data-testid="mobile-filters-apply-btn"
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all mt-4"
             >

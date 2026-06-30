@@ -46,7 +46,11 @@ describe('OAuth2Service', () => {
 
   const mockOAuthAccountRepository = {
     findOne: jest.fn(),
-    create: jest.fn((data) => ({ id: 'link-1', linkedAt: new Date(), ...data })),
+    create: jest.fn((data) => ({
+      id: 'link-1',
+      linkedAt: new Date(),
+      ...data,
+    })),
     save: jest.fn((link) => Promise.resolve(link)),
   };
 
@@ -147,12 +151,7 @@ describe('OAuth2Service', () => {
       });
 
       await expect(
-        service.linkAccount(
-          'user-1',
-          OAuth2Provider.GITHUB,
-          'code',
-          state,
-        ),
+        service.linkAccount('user-1', OAuth2Provider.GITHUB, 'code', state),
       ).rejects.toThrow(ConflictException);
     });
   });

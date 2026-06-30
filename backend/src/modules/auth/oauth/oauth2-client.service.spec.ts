@@ -50,14 +50,12 @@ describe('OAuth2ClientService', () => {
   });
 
   it('exchanges authorization code for tokens', async () => {
-    nock(baseUrl)
-      .post('/oauth/token')
-      .reply(200, {
-        access_token: 'access-123',
-        refresh_token: 'refresh-123',
-        token_type: 'Bearer',
-        expires_in: 3600,
-      });
+    nock(baseUrl).post('/oauth/token').reply(200, {
+      access_token: 'access-123',
+      refresh_token: 'refresh-123',
+      token_type: 'Bearer',
+      expires_in: 3600,
+    });
 
     const tokens = await service.exchangeAuthorizationCode(
       OAuth2Provider.GOOGLE,

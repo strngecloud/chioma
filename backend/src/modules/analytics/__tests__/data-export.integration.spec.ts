@@ -7,7 +7,10 @@ import { once } from 'events';
 import { randomUUID } from 'crypto';
 import { AnalyticsService } from '../analytics.service';
 import { AnalyticsModule } from '../analytics.module';
-import { Property, ListingStatus } from '../../properties/entities/property.entity';
+import {
+  Property,
+  ListingStatus,
+} from '../../properties/entities/property.entity';
 import {
   PropertyInquiry,
   PropertyInquiryStatus,
@@ -146,7 +149,11 @@ class AnalyticsDataExportService {
       throw new Error('Scheduled export is not yet due');
     }
 
-    const result = await this.exportAnalytics(job.ownerId, job.format, job.filters);
+    const result = await this.exportAnalytics(
+      job.ownerId,
+      job.format,
+      job.filters,
+    );
     job.deliveredAt = new Date();
     job.status = 'delivered';
     return result;
@@ -172,7 +179,9 @@ class AnalyticsDataExportService {
     });
   }
 
-  private enforcePrivacyCompliance(record: Record<string, unknown>): Record<string, unknown> {
+  private enforcePrivacyCompliance(
+    record: Record<string, unknown>,
+  ): Record<string, unknown> {
     const { propertyId, ownerId, status, ...safeRecord } = record;
     return safeRecord;
   }
@@ -264,7 +273,9 @@ describe('Analytics Data Export Integration Tests', () => {
     }).compile();
 
     analyticsService = module.get<AnalyticsService>(AnalyticsService);
-    exportService = module.get<AnalyticsDataExportService>(AnalyticsDataExportService);
+    exportService = module.get<AnalyticsDataExportService>(
+      AnalyticsDataExportService,
+    );
     dataSource = module.get<DataSource>(DataSource);
     userRepository = dataSource.getRepository(User);
     propertyRepository = dataSource.getRepository(Property);
@@ -341,7 +352,7 @@ describe('Analytics Data Export Integration Tests', () => {
       description: 'Downtown analytics-ready listing',
       type: 'apartment',
       status: ListingStatus.PUBLISHED,
-      latitude: 3.4567890,
+      latitude: 3.456789,
       longitude: 4.5678901,
       address: '10 Main Street',
       city: 'Nairobi',
@@ -408,7 +419,9 @@ describe('Analytics Data Export Integration Tests', () => {
       ExportFormat.CSV,
     );
 
-    expect(csvResult.content).toContain('title,city,viewCount,favoriteCount,inquiryCount,conversionRate');
+    expect(csvResult.content).toContain(
+      'title,city,viewCount,favoriteCount,inquiryCount,conversionRate',
+    );
     expect((csvResult.content as string).split('\n')).toHaveLength(3);
 
     const pdfResult = await exportService.exportAnalytics(
@@ -421,11 +434,18 @@ describe('Analytics Data Export Integration Tests', () => {
   });
 
   it('applies data filters before export', async () => {
-    const filteredResult = await exportService.exportAnalytics(owner.id, ExportFormat.JSON, {
-      city: 'Nairobi',
-    });
+    const filteredResult = await exportService.exportAnalytics(
+      owner.id,
+      ExportFormat.JSON,
+      {
+        city: 'Nairobi',
+      },
+    );
 
-    const parsedData = JSON.parse(filteredResult.content as string) as Record<string, unknown>[];
+    const parsedData = JSON.parse(filteredResult.content as string) as Record<
+      string,
+      unknown
+    >[];
     expect(parsedData).toHaveLength(1);
     expect(parsedData[0].city).toBe('Nairobi');
     expect(parsedData[0].title).toBe('City Loft');
@@ -460,8 +480,14 @@ describe('Analytics Data Export Integration Tests', () => {
   });
 
   it('redacts privacy-sensitive fields for compliance', async () => {
-    const exportResult = await exportService.exportAnalytics(owner.id, ExportFormat.JSON);
-    const rows = JSON.parse(exportResult.content as string) as Record<string, unknown>[];
+    const exportResult = await exportService.exportAnalytics(
+      owner.id,
+      ExportFormat.JSON,
+    );
+    const rows = JSON.parse(exportResult.content as string) as Record<
+      string,
+      unknown
+    >[];
 
     expect(rows).toHaveLength(2);
     rows.forEach((row) => {

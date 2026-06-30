@@ -266,7 +266,7 @@ describe('Circuit Breaker Integration', () => {
       ).rejects.toThrow('monitoring-failure');
 
       const snapshot = service.getMetrics();
-      const metrics = snapshot.notifications as CircuitBreakerMetrics;
+      const metrics = snapshot.notifications;
 
       expect(metrics).toMatchObject({
         state: 'CLOSED',

@@ -1,4 +1,5 @@
 import { isPlaceholder, checkAppUrls, type EnvCheckResult } from './networks';
+export { checkAppUrls, checkNetworkConfig } from './networks';
 
 function looksLikeStellarId(value: string): boolean {
   return /^[A-Z2-7]{56}$/i.test(value);

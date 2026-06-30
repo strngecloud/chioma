@@ -235,7 +235,7 @@ export function buildComparisonData(
     {
       label: 'Square Feet',
       values: Object.fromEntries(
-        selected.map((property) => [property.id, property.squareFeet]),
+        selected.map((property) => [property.id, property.squareFeet ?? 0]),
       ),
     },
   ];

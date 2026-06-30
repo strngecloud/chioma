@@ -215,7 +215,7 @@ export interface PropertySearchParams {
   sortOrder?: string;
 }
 
-function buildSearchQueryString(params: Record<string, string | undefined>): string {
+function buildSearchQueryString(params: PropertySearchParams): string {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([key, val]) => {
     if (val !== undefined && val !== '' && val !== null) {

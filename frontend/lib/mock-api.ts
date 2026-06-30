@@ -268,6 +268,9 @@ const dynamicPatterns: Array<{
             createdAt: '2026-03-25T10:10:00Z',
           },
         ],
+      },
+    }),
+  },
   {
     pattern: /^\/payments\/(.+)\/receipt$/,
     handler: (match) => ({

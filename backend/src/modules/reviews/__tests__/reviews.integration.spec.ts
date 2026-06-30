@@ -364,9 +364,9 @@ describe('ReviewsService - Integration Tests', () => {
         wouldHostAgain: false,
       };
 
-      await expect(
-        service.postGuestReview(dto, otherUserId),
-      ).rejects.toThrow(AuthorizationError);
+      await expect(service.postGuestReview(dto, otherUserId)).rejects.toThrow(
+        AuthorizationError,
+      );
     });
 
     it('rejects unauthorized host review submissions', async () => {
@@ -381,9 +381,9 @@ describe('ReviewsService - Integration Tests', () => {
         comment: 'Unauthorized host review',
       };
 
-      await expect(
-        service.postHostReview(dto, otherUserId),
-      ).rejects.toThrow(AuthorizationError);
+      await expect(service.postHostReview(dto, otherUserId)).rejects.toThrow(
+        AuthorizationError,
+      );
     });
 
     it('rejects duplicate host reviews for the same booking', async () => {
