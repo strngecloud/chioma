@@ -64,6 +64,7 @@ import { TransactionModule } from './modules/transactions/transaction.module';
 import { ApiVersionModule } from './common/api-versioning/api-version.module';
 import { ResponseTimeInterceptor } from './common/interceptors/response-time.interceptor';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
+import { createDatabaseConnectionOptions } from './database/database-config';
 
 const appLogger = new Logger('AppModule');
 
@@ -186,39 +187,29 @@ const appLogger = new Logger('AppModule');
             logging: false,
           };
         }
-        const config = {
-          type: 'postgres' as const,
-          host: process.env.DB_HOST,
-          port: parseInt(process.env.DB_PORT || '5432'),
-          username: process.env.DB_USERNAME,
-          password: process.env.DB_PASSWORD,
-          database: process.env.DB_NAME,
-          namingStrategy: new SnakeNamingStrategy(),
-          entities: [__dirname + '/modules/**/*.entity{.ts,.js}'],
-          migrations: isTest ? [] : [__dirname + '/migrations/*{.ts,.js}'],
-          synchronize: false,
-          logging: process.env.TYPEORM_LOGGING === 'true',
-          logger: 'advanced-console' as const,
-          // Connection pooling configuration
-          extra: {
-            max: parseInt(process.env.DB_POOL_MAX || '20'),
-            min: parseInt(process.env.DB_POOL_MIN || '5'),
-            idleTimeoutMillis: parseInt(
-              process.env.DB_POOL_IDLE_TIMEOUT || '30000',
-            ),
-            connectionTimeoutMillis: parseInt(
-              process.env.DB_POOL_CONNECTION_TIMEOUT || '2000',
-            ),
-          },
+        const config = createDatabaseConnectionOptions(
+          __dirname,
+          isTest ? [] : [__dirname + '/migrations/*{.ts,.js}'],
+        );
+        const debugConfig = config as {
+          host?: string;
+          port?: number;
+          username?: string;
+          database?: string;
+          replication?: unknown;
+          synchronize?: boolean;
+          logging?: boolean;
+          extra?: unknown;
         };
         console.log('[DEBUG] TypeORM Config:', {
-          host: config.host,
-          port: config.port,
-          username: config.username,
-          database: config.database,
-          synchronize: config.synchronize,
-          logging: config.logging,
-          pool: config.extra,
+          host: debugConfig.host,
+          port: debugConfig.port,
+          username: debugConfig.username,
+          database: debugConfig.database,
+          replicationEnabled: Boolean(debugConfig.replication),
+          synchronize: debugConfig.synchronize,
+          logging: debugConfig.logging,
+          pool: debugConfig.extra,
         });
         return config;
       },
