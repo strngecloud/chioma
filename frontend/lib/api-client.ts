@@ -56,7 +56,7 @@ class ApiClient {
   constructor() {
     this.baseURL = getApiBaseUrl();
     this.defaultHeaders = {
-      'Content-Type': 'application/json',
+      Accept: 'application/json',
     };
   }
 
@@ -115,11 +115,18 @@ class ApiClient {
     } = config;
 
     const token = this.getAuthToken();
+    const isFormData =
+      typeof FormData !== 'undefined' && body instanceof FormData;
     const requestHeaders = {
       ...this.defaultHeaders,
-      ...headers,
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token && { Authorization: `Bearer ${token}` }),
+      ...headers,
     };
+
+    if (isFormData && 'Content-Type' in requestHeaders) {
+      delete requestHeaders['Content-Type'];
+    }
 
     const url = `${this.baseURL}${endpoint}`;
 
@@ -149,7 +156,11 @@ class ApiClient {
           const response = await fetch(url, {
             method,
             headers: requestHeaders,
-            body: body ? JSON.stringify(body) : undefined,
+            body: isFormData
+              ? (body as FormData)
+              : body
+                ? JSON.stringify(body)
+                : undefined,
             cache,
             credentials,
             signal: controller.signal,
