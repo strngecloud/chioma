@@ -1,7 +1,18 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useAuthStore, useAuth } from '@/store/authStore';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+const { postMock } = vi.hoisted(() => ({
+  postMock: vi.fn(),
+}));
+
+vi.mock('@/lib/api-client', () => ({
+  apiClient: {
+    post: postMock,
+  },
+}));
+
+import { useAuth, useAuthStore } from '@/store/authStore';
+
+// --- Helpers -----------------------------------------------------------------
 
 function resetStore() {
   useAuthStore.setState({
@@ -21,17 +32,13 @@ const mockUser = {
   role: 'user' as const,
 };
 
-const expectedStoredUser = {
-  ...mockUser,
-  role: process.env.NODE_ENV === 'production' ? 'user' : 'admin',
-};
-
-// ─── Tests ───────────────────────────────────────────────────────────────────
+// --- Tests -------------------------------------------------------------------
 
 describe('authStore', () => {
   beforeEach(() => {
     localStorage.clear();
     document.cookie = '';
+    postMock.mockReset();
     resetStore();
   });
 
@@ -44,20 +51,18 @@ describe('authStore', () => {
   });
 
   it('setTokens persists auth to state and localStorage', () => {
-    useAuthStore.getState().setTokens('at-1', 'rt-1', mockUser);
+    useAuthStore.getState().setTokens('at-1', null, mockUser);
 
     const state = useAuthStore.getState();
-    expect(state.user).toEqual(expectedStoredUser);
+    expect(state.user).toEqual(mockUser);
     expect(state.accessToken).toBe('at-1');
-    expect(state.refreshToken).toBe('rt-1');
+    expect(state.refreshToken).toBeNull();
     expect(state.isAuthenticated).toBe(true);
     expect(state.loading).toBe(false);
 
     expect(localStorage.getItem('chioma_access_token')).toBe('at-1');
-    expect(localStorage.getItem('chioma_refresh_token')).toBe('rt-1');
-    expect(localStorage.getItem('chioma_user')).toBe(
-      JSON.stringify(expectedStoredUser),
-    );
+    expect(localStorage.getItem('chioma_refresh_token')).toBeNull();
+    expect(localStorage.getItem('chioma_user')).toBe(JSON.stringify(mockUser));
   });
 
   it('hydrate restores state from localStorage', () => {
@@ -68,7 +73,7 @@ describe('authStore', () => {
     useAuthStore.getState().hydrate();
 
     const state = useAuthStore.getState();
-    expect(state.user).toEqual(expectedStoredUser);
+    expect(state.user).toEqual(mockUser);
     expect(state.accessToken).toBe('at-2');
     expect(state.isAuthenticated).toBe(true);
     expect(state.loading).toBe(false);
@@ -95,26 +100,76 @@ describe('authStore', () => {
     expect(localStorage.getItem('chioma_access_token')).toBeNull();
   });
 
-  it('login sets tokens via dev bypass', async () => {
+  it('login authenticates against the backend response', async () => {
+    postMock.mockResolvedValueOnce({
+      data: {
+        accessToken: 'at-login',
+        user: mockUser,
+      },
+      status: 200,
+    });
+
     const result = await useAuthStore
       .getState()
       .login('test@chioma.local', 'pass');
 
     expect(result.success).toBe(true);
+    expect(postMock).toHaveBeenCalledWith('/auth/login', {
+      email: 'test@chioma.local',
+      password: 'pass',
+    });
 
     const state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(true);
-    expect(state.user?.email).toBe('test@chioma.local');
+    expect(state.user).toEqual({
+      ...mockUser,
+      avatar: undefined,
+    });
+    expect(state.accessToken).toBe('at-login');
+  });
+
+  it('returns an actionable message when MFA is required', async () => {
+    postMock.mockResolvedValueOnce({
+      data: {
+        mfaRequired: true,
+        mfaToken: 'mfa-token',
+        user: mockUser,
+      },
+      status: 200,
+    });
+
+    const result = await useAuthStore.getState().login(mockUser.email, 'pass');
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Multi-factor authentication is required to finish signing in.',
+    });
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it('refreshSession updates the stored access token', async () => {
+    useAuthStore.getState().setTokens('at-old', null, mockUser);
+    postMock.mockResolvedValueOnce({
+      data: {
+        accessToken: 'at-refreshed',
+      },
+      status: 200,
+    });
+
+    const result = await useAuthStore.getState().refreshSession();
+
+    expect(result.success).toBe(true);
+    expect(postMock).toHaveBeenCalledWith('/auth/refresh', {}, { retries: 0 });
+    expect(useAuthStore.getState().accessToken).toBe('at-refreshed');
+    expect(localStorage.getItem('chioma_access_token')).toBe('at-refreshed');
   });
 
   it('logout clears state and localStorage', async () => {
-    useAuthStore.getState().setTokens('at-4', 'rt-4', mockUser);
-
-    // Stub fetch to prevent network call
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(new Response(null, { status: 200 })),
-    );
+    useAuthStore.getState().setTokens('at-4', null, mockUser);
+    postMock.mockResolvedValueOnce({
+      data: { message: 'Logged out successfully' },
+      status: 200,
+    });
 
     await useAuthStore.getState().logout();
 
@@ -123,8 +178,7 @@ describe('authStore', () => {
     expect(state.accessToken).toBeNull();
     expect(state.isAuthenticated).toBe(false);
     expect(localStorage.getItem('chioma_access_token')).toBeNull();
-
-    vi.unstubAllGlobals();
+    expect(postMock).toHaveBeenCalledWith('/auth/logout', {}, { retries: 0 });
   });
 
   it('useAuth alias points to the same store', () => {

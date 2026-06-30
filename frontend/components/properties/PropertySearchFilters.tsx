@@ -168,7 +168,7 @@ export default function PropertySearchFilters() {
     activeTags.size > 0;
 
   return (
-    <div className="w-full space-y-4 mb-6">
+    <div className="w-full space-y-4 mb-6" data-testid="property-search-filters">
       {/* Search Bar - Desktop & Mobile */}
       <form
         onSubmit={handleSearchSubmit}
@@ -186,6 +186,8 @@ export default function PropertySearchFilters() {
               setShowSuggestions(true);
             }}
             onFocus={() => setShowSuggestions(true)}
+            placeholder="Search by location..."
+            data-testid="search-location-input"
             className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder:text-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
           />
 
@@ -219,6 +221,7 @@ export default function PropertySearchFilters() {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
+              data-testid="property-type-select"
               className="w-full appearance-none bg-slate-900/50 border border-white/5 rounded-2xl py-3.5 pl-12 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
             >
               {propertyTypes.map((opt) => (
@@ -237,6 +240,7 @@ export default function PropertySearchFilters() {
               type="date"
               value={availability}
               onChange={(e) => setAvailability(e.target.value)}
+              data-testid="availability-date-input"
               className="w-full appearance-none bg-slate-900/50 border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder:text-blue-200/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
             />
           </div>
@@ -250,6 +254,7 @@ export default function PropertySearchFilters() {
                 placeholder="Min"
                 value={minBudget}
                 onChange={(e) => setMinBudget(e.target.value)}
+                data-testid="min-price-input"
                 className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-3.5 pl-8 pr-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
               />
             </div>
@@ -261,6 +266,7 @@ export default function PropertySearchFilters() {
                 placeholder="Max"
                 value={maxBudget}
                 onChange={(e) => setMaxBudget(e.target.value)}
+                data-testid="max-price-input"
                 className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-3.5 pl-8 pr-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
               />
             </div>
@@ -268,6 +274,7 @@ export default function PropertySearchFilters() {
 
           <button
             type="submit"
+            data-testid="search-submit-btn"
             className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3.5 rounded-2xl transition-all shadow-lg shadow-blue-500/20 active:scale-95"
           >
             Search
@@ -288,6 +295,7 @@ export default function PropertySearchFilters() {
         <button
           type="button"
           onClick={() => setIsMobileFiltersOpen(true)}
+          data-testid="mobile-filters-toggle"
           className="md:hidden w-full flex items-center justify-center gap-2 bg-slate-800/80 text-white py-3.5 rounded-2xl border border-white/5"
         >
           <Filter className="w-5 h-5" />
@@ -296,7 +304,7 @@ export default function PropertySearchFilters() {
       </form>
 
       {/* Advanced Filters (Facets) - Desktop Only */}
-      <div className="hidden md:flex flex-wrap items-center gap-3">
+      <div className="hidden md:flex flex-wrap items-center gap-3" data-testid="popular-filters">
         <span className="text-blue-200/50 text-sm font-medium pr-2">
           Popular:
         </span>
@@ -309,6 +317,9 @@ export default function PropertySearchFilters() {
                 ? 'bg-blue-600/30 border-blue-500/50 text-white'
                 : 'bg-slate-800/30 hover:bg-slate-700/50 text-blue-200/70 border-white/5 hover:text-white'
             }`}
+            key={tag}
+            data-testid={`filter-tag-${tag.toLowerCase().replace(/\s+/g, '-')}`}
+            className="bg-slate-800/30 hover:bg-slate-700/50 text-blue-200/70 border border-white/5 px-4 py-2 rounded-xl text-sm transition-all hover:text-white"
           >
             {tag.label}
           </button>
@@ -317,16 +328,18 @@ export default function PropertySearchFilters() {
 
       {/* Mobile Filters Modal/Drawer */}
       {isMobileFiltersOpen && (
-        <div className="fixed inset-0 z-50 md:hidden animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-50 md:hidden animate-in fade-in duration-300" data-testid="mobile-filters-drawer">
           <div
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
             onClick={() => setIsMobileFiltersOpen(false)}
+            data-testid="mobile-filters-backdrop"
           />
           <div className="absolute bottom-0 inset-x-0 bg-slate-900 border-t border-white/10 rounded-t-[2.5rem] p-8 space-y-8 animate-in slide-in-from-bottom duration-500 overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-white">Filters</h2>
               <button
                 onClick={() => setIsMobileFiltersOpen(false)}
+                data-testid="mobile-filters-close-btn"
                 className="p-2 bg-slate-800 rounded-full text-blue-200/50"
               >
                 <X className="w-6 h-6" />
@@ -348,6 +361,8 @@ export default function PropertySearchFilters() {
                           ? 'bg-blue-600/30 border-blue-500/50 text-white'
                           : 'bg-slate-800 border-white/5 text-white hover:bg-blue-600/20'
                       }`}
+                      data-testid={`mobile-type-${opt.value}`}
+                      className="bg-slate-800 border border-white/5 py-3 rounded-xl text-white font-medium hover:bg-blue-600/20 transition-all text-xs"
                     >
                       {opt.label}
                     </button>
@@ -384,6 +399,7 @@ export default function PropertySearchFilters() {
                   type="date"
                   value={availability}
                   onChange={(e) => setAvailability(e.target.value)}
+                  data-testid="mobile-availability-date-input"
                   className="w-full bg-slate-800 border border-white/5 rounded-xl py-4 px-4 text-white focus:outline-none"
                 />
               </div>
@@ -398,6 +414,7 @@ export default function PropertySearchFilters() {
                     placeholder="Min Price"
                     value={minBudget}
                     onChange={(e) => setMinBudget(e.target.value)}
+                    data-testid="mobile-min-price-input"
                     className="flex-1 bg-slate-800 border border-white/5 py-3 px-4 rounded-xl text-white font-medium focus:outline-none"
                   />
                   <span className="text-white">-</span>
@@ -406,6 +423,7 @@ export default function PropertySearchFilters() {
                     placeholder="Max Price"
                     value={maxBudget}
                     onChange={(e) => setMaxBudget(e.target.value)}
+                    data-testid="mobile-max-price-input"
                     className="flex-1 bg-slate-800 border border-white/5 py-3 px-4 rounded-xl text-white font-medium focus:outline-none"
                   />
                 </div>
@@ -414,6 +432,8 @@ export default function PropertySearchFilters() {
 
             <button
               onClick={handleApplyFilters}
+              onClick={() => setIsMobileFiltersOpen(false)}
+              data-testid="mobile-filters-apply-btn"
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all mt-4"
             >
               Apply Filters
