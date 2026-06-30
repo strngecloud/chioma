@@ -21,6 +21,27 @@ function forwardHeaders(request: NextRequest): HeadersInit {
   return headers;
 }
 
+function appendSetCookieHeaders(
+  sourceHeaders: Headers,
+  targetHeaders: Headers,
+): void {
+  const headersWithGetSetCookie = sourceHeaders as Headers & {
+    getSetCookie?: () => string[];
+  };
+
+  if (typeof headersWithGetSetCookie.getSetCookie === 'function') {
+    for (const cookie of headersWithGetSetCookie.getSetCookie()) {
+      targetHeaders.append('set-cookie', cookie);
+    }
+    return;
+  }
+
+  const setCookie = sourceHeaders.get('set-cookie');
+  if (setCookie) {
+    targetHeaders.append('set-cookie', setCookie);
+  }
+}
+
 export async function proxyToBackend(
   request: NextRequest,
   pathSegments: string[],
@@ -55,6 +76,7 @@ export async function proxyToBackend(
     if (responseContentType) {
       responseHeaders.set('content-type', responseContentType);
     }
+    appendSetCookieHeaders(response.headers, responseHeaders);
 
     if (!text) {
       return new NextResponse(null, {

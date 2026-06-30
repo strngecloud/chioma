@@ -25,6 +25,13 @@ export const queryKeys = {
       [...queryKeys.payments.all, 'agreement', agreementId] as const,
   },
 
+  paymentMethods: {
+    all: ['payment-methods'] as const,
+    lists: () => [...queryKeys.paymentMethods.all, 'list'] as const,
+    list: (filters: object) =>
+      [...queryKeys.paymentMethods.lists(), filters] as const,
+  },
+
   agreements: {
     all: ['agreements'] as const,
     lists: () => [...queryKeys.agreements.all, 'list'] as const,
