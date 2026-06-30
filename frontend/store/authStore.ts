@@ -1,9 +1,11 @@
 'use client';
 
+import { AppError } from '@/lib/errors';
+import { apiClient } from '@/lib/api-client';
 import { create } from 'zustand';
 import { withMiddleware } from './middleware';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// --- Types -------------------------------------------------------------------
 
 export interface User {
   id: string;
@@ -31,23 +33,55 @@ interface RegisterPayload {
   role?: 'user' | 'admin';
 }
 
+interface AuthApiUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+  avatar?: string;
+}
+
+interface AuthSuccessResponse {
+  accessToken: string;
+  refreshToken?: string | null;
+  user: AuthApiUser;
+  mfaRequired?: false;
+}
+
+interface MfaRequiredResponse {
+  mfaRequired: true;
+  mfaToken: string;
+  user: AuthApiUser;
+}
+
+interface RefreshResponse {
+  accessToken: string;
+}
+
+interface MessageResponse {
+  message: string;
+}
+
+type AuthResult = { success: boolean; error?: string };
+
 interface AuthActions {
-  login: (
-    email: string,
-    password: string,
-  ) => Promise<{ success: boolean; error?: string }>;
-  register: (
-    payload: RegisterPayload,
-  ) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  register: (payload: RegisterPayload) => Promise<AuthResult>;
   logout: () => Promise<void>;
-  setTokens: (accessToken: string, refreshToken: string, user: User) => void;
+  refreshSession: () => Promise<AuthResult>;
+  setTokens: (
+    accessToken: string,
+    refreshToken: string | null,
+    user: User,
+  ) => void;
   setWalletAddress: (address: string | null) => void;
   hydrate: () => void;
 }
 
 export type AuthStore = AuthState & AuthActions;
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// --- Constants ---------------------------------------------------------------
 
 const AUTH_STORAGE_KEYS = {
   ACCESS_TOKEN: 'chioma_access_token',
@@ -58,17 +92,21 @@ const AUTH_STORAGE_KEYS = {
 
 const AUTH_COOKIE_NAME = 'chioma_auth_token';
 
-// ─── Cookie Helpers ──────────────────────────────────────────────────────────
+// --- Cookie Helpers ----------------------------------------------------------
 
 function setAuthCookie(token: string) {
+  if (typeof document === 'undefined') return;
+
   document.cookie = `${AUTH_COOKIE_NAME}=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 }
 
 function removeAuthCookie() {
+  if (typeof document === 'undefined') return;
+
   document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
 }
 
-// ─── Storage Helpers ─────────────────────────────────────────────────────────
+// --- Storage Helpers ---------------------------------------------------------
 
 function readStoredAuth(): Omit<AuthState, 'loading'> {
   if (typeof window === 'undefined') {
@@ -103,7 +141,6 @@ function readStoredAuth(): Omit<AuthState, 'loading'> {
       };
     }
   } catch {
-    // Corrupted storage — clear and start fresh
     localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_KEYS.USER);
@@ -121,6 +158,8 @@ function readStoredAuth(): Omit<AuthState, 'loading'> {
 }
 
 function clearStorage() {
+  if (typeof window === 'undefined') return;
+
   localStorage.removeItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
   localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
   localStorage.removeItem(AUTH_STORAGE_KEYS.USER);
@@ -128,19 +167,51 @@ function clearStorage() {
   removeAuthCookie();
 }
 
-function persistAuth(accessToken: string, refreshToken: string, user: User) {
+function persistAuth(
+  accessToken: string,
+  refreshToken: string | null,
+  user: User,
+) {
   localStorage.setItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-  localStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+
+  if (refreshToken) {
+    localStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+  } else {
+    localStorage.removeItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+  }
+
   localStorage.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(user));
   setAuthCookie(accessToken);
 }
 
-// ─── Store ───────────────────────────────────────────────────────────────────
+function normalizeUser(user: AuthApiUser): User {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName ?? '',
+    lastName: user.lastName ?? '',
+    role: user.role === 'admin' ? 'admin' : 'user',
+    avatar: user.avatar,
+  };
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof AppError) {
+    return error.userMessage || error.message || fallback;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+// --- Store -------------------------------------------------------------------
 
 export const useAuthStore = create<AuthStore>()(
   withMiddleware(
     (set, get) => ({
-      // Initial state — SSR-safe defaults; call hydrate() on client mount
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -148,19 +219,10 @@ export const useAuthStore = create<AuthStore>()(
       loading: true,
       walletAddress: null,
 
-      /**
-       * Hydrate from localStorage on client mount.
-       * Should be called once from the root layout/component.
-       */
       hydrate: () => {
         const stored = readStoredAuth();
         set((state) => {
-          let user = stored.user;
-          // FORCED TO ADMIN FOR DEVELOPMENT - Global bypass for all admin pages
-          if (user && process.env.NODE_ENV !== 'production') {
-            user = { ...user, role: 'admin' };
-          }
-          state.user = user;
+          state.user = stored.user;
           state.accessToken = stored.accessToken;
           state.refreshToken = stored.refreshToken;
           state.isAuthenticated = stored.isAuthenticated;
@@ -169,19 +231,10 @@ export const useAuthStore = create<AuthStore>()(
         });
       },
 
-      /**
-       * Directly set tokens & user (useful after registration or
-       * when the backend response is already available).
-       */
-      setTokens: (accessToken: string, refreshToken: string, user: User) => {
-        // FORCED TO ADMIN FOR DEVELOPMENT - Global bypass for all admin pages
-        let finalUser = user;
-        if (user && process.env.NODE_ENV !== 'production') {
-          finalUser = { ...user, role: 'admin' };
-        }
-        persistAuth(accessToken, refreshToken, finalUser);
+      setTokens: (accessToken: string, refreshToken: string | null, user: User) => {
+        persistAuth(accessToken, refreshToken, user);
         set((state) => {
-          state.user = finalUser;
+          state.user = user;
           state.accessToken = accessToken;
           state.refreshToken = refreshToken;
           state.isAuthenticated = true;
@@ -189,127 +242,125 @@ export const useAuthStore = create<AuthStore>()(
         });
       },
 
-      /**
-       * Set wallet address and persist to localStorage.
-       */
       setWalletAddress: (address: string | null) => {
         if (address) {
           localStorage.setItem(AUTH_STORAGE_KEYS.WALLET_ADDRESS, address);
         } else {
           localStorage.removeItem(AUTH_STORAGE_KEYS.WALLET_ADDRESS);
         }
+
         set((state) => {
           state.walletAddress = address;
         });
       },
 
-      /**
-       * Login with email/password — calls the backend auth endpoint.
-       */
-      login: async (
-        email: string,
-      ): Promise<{ success: boolean; error?: string }> => {
-        // --- REAL AUTHENTICATION LOGIC (Commented out for development) ---
-        /*
+      login: async (email: string, password: string): Promise<AuthResult> => {
         try {
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
+          const response = await apiClient.post<
+            AuthSuccessResponse | MfaRequiredResponse
+          >('/auth/login', {
+            email,
+            password,
           });
 
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+          if ('mfaRequired' in response.data && response.data.mfaRequired) {
             return {
               success: false,
-              error: errorData.message || 'Invalid credentials. Please try again.',
+              error:
+                'Multi-factor authentication is required to finish signing in.',
             };
           }
 
-          const data = await response.json();
-          get().setTokens(data.accessToken, data.refreshToken, data.user);
+          get().setTokens(
+            response.data.accessToken,
+            response.data.refreshToken ?? null,
+            normalizeUser(response.data.user),
+          );
+
           return { success: true };
-        } catch {
+        } catch (error) {
           return {
             success: false,
-            error: 'Network error. Please check your connection.',
+            error: getErrorMessage(
+              error,
+              'Invalid credentials. Please try again.',
+            ),
           };
         }
-        */
-
-        // DEV BYPASS: map demo emails to roles for local testing.
-        const normalizedEmail = (email || 'dev@chioma.local').toLowerCase();
-        const inferredRole: User['role'] = normalizedEmail.includes('admin')
-          ? 'admin'
-          : 'user';
-
-        get().setTokens('mock-access-token', 'mock-refresh-token', {
-          id: 'dev-123',
-          email: normalizedEmail,
-          firstName:
-            inferredRole.charAt(0).toUpperCase() + inferredRole.slice(1),
-          lastName: 'User',
-          role: inferredRole,
-        });
-        return { success: true };
       },
 
-      /**
-       * Register a new account — calls the backend auth endpoint.
-       */
-      register: async (
-        payload: RegisterPayload,
-      ): Promise<{ success: boolean; error?: string }> => {
-        // --- REAL REGISTRATION LOGIC (Commented out for development) ---
-        /*
+      register: async (payload: RegisterPayload): Promise<AuthResult> => {
         try {
-          const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            return {
-              success: false,
-              error: errorData.message || 'Registration failed. Please try again.',
-            };
-          }
-          const data = await response.json();
-          get().setTokens(data.accessToken, data.refreshToken, data.user);
-          return { success: true };
-        } catch {
-          return { success: false, error: 'Network error. Please check your connection.' };
-        }
-        */
+          const response = await apiClient.post<AuthSuccessResponse>(
+            '/auth/register',
+            payload,
+          );
 
-        // DEV BYPASS: immediately log in after registration.
-        get().setTokens('mock-access-token', 'mock-refresh-token', {
-          id: 'dev-' + Date.now(),
-          email: payload.email,
-          firstName: payload.firstName,
-          lastName: payload.lastName,
-          role: payload.role ?? 'user',
-        });
-        return { success: true };
+          get().setTokens(
+            response.data.accessToken,
+            response.data.refreshToken ?? null,
+            normalizeUser(response.data.user),
+          );
+
+          return { success: true };
+        } catch (error) {
+          return {
+            success: false,
+            error: getErrorMessage(
+              error,
+              'Registration failed. Please try again.',
+            ),
+          };
+        }
       },
 
-      /**
-       * Logout — clears tokens from storage, cookie, and state.
-       */
-      logout: async () => {
-        const token = localStorage.getItem(AUTH_STORAGE_KEYS.ACCESS_TOKEN);
+      refreshSession: async (): Promise<AuthResult> => {
+        const currentUser = get().user;
 
-        // Best-effort call to backend logout
-        if (token) {
-          try {
-            await fetch('/api/auth/logout', {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${token}` },
-            });
-          } catch {
-            // Silently fail — we still clear local state
-          }
+        if (!currentUser) {
+          return { success: false, error: 'No authenticated user to refresh.' };
+        }
+
+        try {
+          const response = await apiClient.post<RefreshResponse>(
+            '/auth/refresh',
+            {},
+            { retries: 0 },
+          );
+
+          get().setTokens(
+            response.data.accessToken,
+            get().refreshToken,
+            currentUser,
+          );
+
+          return { success: true };
+        } catch (error) {
+          clearStorage();
+          set((state) => {
+            state.user = null;
+            state.accessToken = null;
+            state.refreshToken = null;
+            state.isAuthenticated = false;
+            state.walletAddress = null;
+            state.loading = false;
+          });
+
+          return {
+            success: false,
+            error: getErrorMessage(
+              error,
+              'Your session expired. Please sign in again.',
+            ),
+          };
+        }
+      },
+
+      logout: async () => {
+        try {
+          await apiClient.post<MessageResponse>('/auth/logout', {}, { retries: 0 });
+        } catch {
+          // Best-effort logout: always clear the local session.
         }
 
         clearStorage();
@@ -328,6 +379,6 @@ export const useAuthStore = create<AuthStore>()(
   ),
 );
 
-// ─── Convenience Hook (backward-compatible with old AuthContext) ─────────────
+// --- Convenience Hook (backward-compatible with old AuthContext) -------------
 
 export const useAuth = useAuthStore;

@@ -128,6 +128,25 @@ export class MetricsService implements OnModuleInit {
 
   private cacheHits = 0;
   private cacheTotal = 0;
+  private readonly dbReplicationLagSeconds = new Gauge({
+    name: 'database_replication_lag_seconds',
+    help: 'Replication lag for each database replica in seconds',
+    labelNames: ['replica'] as const,
+    registers: [this.registry],
+  });
+
+  private readonly dbReplicaHealthy = new Gauge({
+    name: 'database_replica_healthy',
+    help: 'Replica health state where 1 is healthy and 0 is unhealthy',
+    labelNames: ['replica'] as const,
+    registers: [this.registry],
+  });
+
+  private readonly dbReplicaCount = new Gauge({
+    name: 'database_replica_count',
+    help: 'Number of configured database replicas currently observed',
+    registers: [this.registry],
+  });
 
   private readonly rentPayments = new Counter({
     name: 'rent_payments_total',
@@ -209,6 +228,18 @@ export class MetricsService implements OnModuleInit {
     this.dbQueryAvgTimeMs.set(avgTimeMs);
     this.dbTps.set(tps);
     this.dbCacheHitRatio.set(cacheHitRatio);
+  }
+
+  setReplicationLag(replica: string, lagSeconds: number): void {
+    this.dbReplicationLagSeconds.set({ replica }, lagSeconds);
+  }
+
+  setReplicaHealth(replica: string, healthy: boolean): void {
+    this.dbReplicaHealthy.set({ replica }, healthy ? 1 : 0);
+  }
+
+  setReplicaCount(count: number): void {
+    this.dbReplicaCount.set(count);
   }
 
   recordDatabaseQuery(queryType: string, durationMs: number): void {

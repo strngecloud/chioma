@@ -25,6 +25,13 @@ export const queryKeys = {
       [...queryKeys.payments.all, 'agreement', agreementId] as const,
   },
 
+  paymentMethods: {
+    all: ['payment-methods'] as const,
+    lists: () => [...queryKeys.paymentMethods.all, 'list'] as const,
+    list: (filters: object) =>
+      [...queryKeys.paymentMethods.lists(), filters] as const,
+  },
+
   agreements: {
     all: ['agreements'] as const,
     lists: () => [...queryKeys.agreements.all, 'list'] as const,
@@ -40,6 +47,15 @@ export const queryKeys = {
       [...queryKeys.notifications.all, 'list', filters ?? {}] as const,
     unreadCount: () =>
       [...queryKeys.notifications.all, 'unread-count'] as const,
+  },
+
+  favorites: {
+    all: ['favorites'] as const,
+    list: () => [...queryKeys.favorites.all, 'list'] as const,
+    status: (propertyId: string) =>
+      [...queryKeys.favorites.all, 'status', propertyId] as const,
+    count: (propertyId: string) =>
+      [...queryKeys.favorites.all, 'count', propertyId] as const,
   },
 
   maintenance: {
@@ -138,5 +154,14 @@ export const queryKeys = {
     all: ['analytics'] as const,
     landlordOverview: (days: number) =>
       [...queryKeys.analytics.all, 'landlord-overview', days] as const,
+  },
+
+  documents: {
+    all: ['documents'] as const,
+    lists: () => [...queryKeys.documents.all, 'list'] as const,
+    list: (filters: object) =>
+      [...queryKeys.documents.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.documents.all, 'detail', id] as const,
+    shared: () => [...queryKeys.documents.all, 'shared'] as const,
   },
 } as const;
