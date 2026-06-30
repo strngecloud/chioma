@@ -46,18 +46,33 @@ export class FeatureDisabledError extends BaseAppError {
  * request, was at fault.
  */
 export class ExternalCallTimeoutError extends BaseAppError {
-  public readonly context: string;
+  public readonly operationContext: string;
   public readonly timeoutMs: number;
 
-  constructor(context: string, timeoutMs: number) {
+  constructor(operationContext: string, timeoutMs: number) {
     super(
       ErrorCode.EXTERNAL_SERVICE_TIMEOUT,
       HttpStatus.REQUEST_TIMEOUT,
-      `External call "${context}" timed out after ${timeoutMs} ms`,
+      `External call "${operationContext}" timed out after ${timeoutMs} ms`,
       true,
-      { context, timeoutMs },
+      { operationContext, timeoutMs },
     );
-    this.context = context;
+    this.operationContext = operationContext;
+  public readonly serviceContext: string;
+  public readonly callContext: string;
+  public readonly timeoutMs: number;
+
+  constructor(serviceContext: string, timeoutMs: number) {
+    super(
+      ErrorCode.EXTERNAL_SERVICE_TIMEOUT,
+      HttpStatus.REQUEST_TIMEOUT,
+      `External call "${serviceContext}" timed out after ${timeoutMs} ms`,
+      true,
+      { serviceContext, timeoutMs },
+    );
+    this.callContext = context;
+    this.serviceContext = serviceContext;
+    this.callContext = serviceContext;
     this.timeoutMs = timeoutMs;
   }
 }

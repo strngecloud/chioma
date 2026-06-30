@@ -43,13 +43,13 @@ export class PropertiesController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.AGENT, UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create a new property listing',
     description:
-      'Creates a new property listing. Only landlords and admins can create properties.',
+      'Creates a new property listing. Only agents (landlords) and admins can create properties.',
   })
   @ApiResponse({
     status: 201,
@@ -328,7 +328,7 @@ export class PropertiesController {
 
   @Post('/property-listings/wizard/start')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.AGENT, UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -344,7 +344,7 @@ export class PropertiesController {
 
   @Patch('/property-listings/wizard/:id/step')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.AGENT, UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -361,7 +361,7 @@ export class PropertiesController {
 
   @Get('/property-listings/wizard/:id/draft')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.AGENT, UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get wizard draft',
@@ -376,12 +376,12 @@ export class PropertiesController {
 
   @Delete('/property-listings/wizard/:id/draft')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.AGENT, UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete wizard draft',
-    description: 'Deletes a wizard draft for the current landlord.',
+    description: 'Deletes a wizard draft for the current user.',
   })
   async deleteListingWizardDraft(
     @Param('id', ParseUUIDPipe) id: string,
@@ -392,7 +392,7 @@ export class PropertiesController {
 
   @Post('/property-listings/wizard/:id/publish')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.AGENT, UserRole.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
