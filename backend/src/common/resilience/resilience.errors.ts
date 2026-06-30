@@ -59,7 +59,7 @@ export class ExternalCallTimeoutError extends BaseAppError {
       { serviceContext, timeoutMs },
     );
     this.serviceContext = serviceContext;
-    this.callContext = context;
+    this.callContext = serviceContext;
     this.timeoutMs = timeoutMs;
   }
 }
