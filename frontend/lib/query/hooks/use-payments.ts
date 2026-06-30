@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { queryKeys } from '../keys';
-import type { Payment, PaginatedResponse } from '@/types';
+import type { Payment, PaginatedResponse, PaymentMethod } from '@/types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -114,6 +114,63 @@ export function useCreatePayment() {
           queryKey: queryKeys.agreements.detail(created.agreementId),
         });
       }
+    },
+  });
+}
+
+// ─── Payment Methods Hooks ──────────────────────────────────────────────────
+
+export interface CreatePaymentMethodPayload {
+  paymentType: string;
+  lastFour?: string;
+  expiryDate?: string;
+  isDefault?: boolean;
+  metadata?: Record<string, unknown>;
+  sensitiveMetadata?: Record<string, unknown>;
+}
+
+export function usePaymentMethods(params: { isDefault?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.paymentMethods.list(params),
+    queryFn: async () => {
+      const qs = params.isDefault !== undefined ? `?isDefault=${params.isDefault}` : '';
+      const { data } = await apiClient.get<PaymentMethod[]>(
+        `/payment-methods${qs}`,
+      );
+      return data;
+    },
+  });
+}
+
+export function useCreatePaymentMethod() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: CreatePaymentMethodPayload) => {
+      const { data } = await apiClient.post<PaymentMethod>(
+        '/payment-methods',
+        payload,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.paymentMethods.all });
+    },
+  });
+}
+
+export function useDeletePaymentMethod() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await apiClient.delete<{ success: boolean }>(
+        `/payment-methods/${id}`,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.paymentMethods.all });
     },
   });
 }

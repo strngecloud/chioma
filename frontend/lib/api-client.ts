@@ -11,16 +11,19 @@ import {
   logError,
   withRetry,
 } from '@/lib/errors';
-import { getMockData, shouldUseMockApi } from '@/lib/mock-api';
+import { getMockData, shouldUseMockApi } from '@/mocks';
+import { globalRateLimitTracker } from '@/lib/rate-limit';
 
 type RequestConfig = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
   body?: unknown;
   cache?: RequestCache;
+  credentials?: RequestCredentials;
   retries?: number;
   timeoutMs?: number;
   signal?: AbortSignal;
+  cancellationKey?: string;
 };
 
 type ApiResponse<T> = {
@@ -54,7 +57,7 @@ class ApiClient {
   constructor() {
     this.baseURL = getApiBaseUrl();
     this.defaultHeaders = {
-      'Content-Type': 'application/json',
+      Accept: 'application/json',
     };
   }
 
@@ -106,19 +109,38 @@ class ApiClient {
       headers = {},
       body,
       cache = 'no-cache',
+      credentials = 'include',
       retries = 3,
       timeoutMs = 12000,
       signal,
+      cancellationKey,
     } = config;
 
     const token = this.getAuthToken();
+    const isFormData =
+      typeof FormData !== 'undefined' && body instanceof FormData;
     const requestHeaders = {
       ...this.defaultHeaders,
-      ...headers,
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token && { Authorization: `Bearer ${token}` }),
+      ...headers,
     };
 
+    if (isFormData && 'Content-Type' in requestHeaders) {
+      delete requestHeaders['Content-Type'];
+    }
+
     const url = `${this.baseURL}${endpoint}`;
+
+    const waitTimeMs = globalRateLimitTracker.getWaitTimeMs();
+    if (waitTimeMs > 0) {
+      const error = createHttpError(429, {
+        source: 'lib/api-client.ts',
+        action: `${method} ${endpoint}`,
+        metadata: { waitTimeMs },
+      });
+      return Promise.reject(error);
+    }
 
     return withRetry(
       async () => {
@@ -132,14 +154,33 @@ class ApiClient {
           });
         }
 
+        if (cancellationKey) {
+          const cancelSignal =
+            cancellationManager.createSignal(cancellationKey).signal;
+          if (cancelSignal.aborted) controller.abort();
+          cancelSignal.addEventListener('abort', () => controller.abort(), {
+            once: true,
+          });
+        }
+
         try {
           const response = await fetch(url, {
             method,
             headers: requestHeaders,
-            body: body ? JSON.stringify(body) : undefined,
+            body: isFormData
+              ? (body as FormData)
+              : body
+                ? JSON.stringify(body)
+                : undefined,
             cache,
+            credentials,
             signal: controller.signal,
           });
+
+          globalRateLimitTracker.updateFromHeaders(
+            response.headers,
+            response.status,
+          );
 
           if (!response.ok) {
             this.clearAuthAndRedirectIfNeeded(response.status);
@@ -171,6 +212,14 @@ class ApiClient {
                 : undefined,
           };
         } catch (error) {
+          if (isCancellationError(error)) {
+            clearTimeout(timeoutId);
+            throw cancellationManager.classifyCancellationError(
+              error,
+              'lib/api-client.ts',
+            );
+          }
+
           const appError = classifyUnknownError(error, {
             source: 'lib/api-client.ts',
             action: `${method} ${endpoint}`,
@@ -185,11 +234,14 @@ class ApiClient {
       {
         maxAttempts: retries,
         shouldRetry: (error) => {
+          if (isCancellationError(error)) return false;
+
           const appError = classifyUnknownError(error, {
             source: 'lib/api-client.ts',
             action: `retry-check ${method} ${endpoint}`,
           });
 
+          if (appError.code === 'NETWORK_RATE_LIMIT') return false;
           if (appError.category === 'network') return true;
           if (typeof appError.status === 'number' && appError.status >= 500) {
             return true;
