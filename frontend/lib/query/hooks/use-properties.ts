@@ -12,34 +12,52 @@ import type { Property, PaginatedResponse } from '@/types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface PropertyListParams {
+export interface PropertyListParams {
   page?: number;
   limit?: number;
   city?: string;
+  state?: string;
+  country?: string;
   minPrice?: number;
   maxPrice?: number;
-  bedrooms?: number;
-  propertyType?: string;
-  status?: string;
+  minBedrooms?: number;
+  maxBedrooms?: number;
+  minBathrooms?: number;
+  maxBathrooms?: number;
+  type?: Property['type'];
+  status?: Property['status'];
   search?: string;
+  isFurnished?: boolean;
+  hasParking?: boolean;
+  petsAllowed?: boolean;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
 }
 
-interface CreatePropertyPayload {
+export interface CreatePropertyPayload {
   title: string;
-  description: string;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
   price: number;
-  bedrooms: number;
-  bathrooms: number;
-  squareFeet: number;
-  propertyType: Property['propertyType'];
-  amenities?: string[];
+  currency?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  /** Area in square metres (backend field) */
+  area?: number;
+  floor?: number;
+  type?: Property['type'];
+  isFurnished?: boolean;
+  hasParking?: boolean;
+  petsAllowed?: boolean;
+  amenities?: Array<{ name: string; icon?: string }>;
+  images?: Array<{ url: string; sortOrder?: number; isPrimary?: boolean }>;
+  metadata?: Record<string, unknown>;
 }
 
-type UpdatePropertyPayload = Partial<CreatePropertyPayload>;
+export type UpdatePropertyPayload = Partial<CreatePropertyPayload>;
 
 export interface PropertyListingWizardDraft {
   id: string;
@@ -69,12 +87,22 @@ function buildQueryString(params: PropertyListParams): string {
   if (params.page) qs.append('page', String(params.page));
   if (params.limit) qs.append('limit', String(params.limit));
   if (params.city) qs.append('city', params.city);
-  if (params.minPrice) qs.append('minPrice', String(params.minPrice));
-  if (params.maxPrice) qs.append('maxPrice', String(params.maxPrice));
-  if (params.bedrooms) qs.append('bedrooms', String(params.bedrooms));
-  if (params.propertyType) qs.append('propertyType', params.propertyType);
+  if (params.state) qs.append('state', params.state);
+  if (params.country) qs.append('country', params.country);
+  if (params.minPrice !== undefined) qs.append('minPrice', String(params.minPrice));
+  if (params.maxPrice !== undefined) qs.append('maxPrice', String(params.maxPrice));
+  if (params.minBedrooms !== undefined) qs.append('minBedrooms', String(params.minBedrooms));
+  if (params.maxBedrooms !== undefined) qs.append('maxBedrooms', String(params.maxBedrooms));
+  if (params.minBathrooms !== undefined) qs.append('minBathrooms', String(params.minBathrooms));
+  if (params.maxBathrooms !== undefined) qs.append('maxBathrooms', String(params.maxBathrooms));
+  if (params.type) qs.append('type', params.type);
   if (params.status) qs.append('status', params.status);
   if (params.search) qs.append('search', params.search);
+  if (params.isFurnished !== undefined) qs.append('isFurnished', String(params.isFurnished));
+  if (params.hasParking !== undefined) qs.append('hasParking', String(params.hasParking));
+  if (params.petsAllowed !== undefined) qs.append('petsAllowed', String(params.petsAllowed));
+  if (params.sortBy) qs.append('sortBy', params.sortBy);
+  if (params.sortOrder) qs.append('sortOrder', params.sortOrder);
   const str = qs.toString();
   return str ? `?${str}` : '';
 }
@@ -327,6 +355,66 @@ export function useDeleteWizardDraft() {
         `/properties/property-listings/wizard/${id}/draft`,
       );
       return id;
+    },
+  });
+}
+
+// ─── Image Upload ─────────────────────────────────────────────────────────────
+
+interface UploadUrlResponse {
+  url: string;
+  key: string;
+}
+
+interface UploadPropertyImageResult {
+  /** Publicly accessible URL of the uploaded image */
+  url: string;
+  /** Storage key returned by the backend */
+  key: string;
+}
+
+/**
+ * Upload a property image via the backend pre-signed S3 URL flow.
+ *
+ * Flow:
+ *   1. POST /storage/upload-url  → get a pre-signed PUT URL + storage key
+ *   2. PUT <presignedUrl>        → upload the raw file directly to S3
+ *   3. GET /storage/download-url?key=<key> → resolve a public/download URL
+ *
+ * The returned `url` can be passed directly into `CreatePropertyPayload.images`.
+ */
+export function useUploadPropertyImage() {
+  return useMutation({
+    mutationFn: async (file: File): Promise<UploadPropertyImageResult> => {
+      // Step 1 – request a pre-signed upload URL
+      const { data: uploadMeta } = await apiClient.post<UploadUrlResponse>(
+        '/storage/upload-url',
+        {
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+        },
+      );
+
+      // Step 2 – upload the file directly to the pre-signed URL (no auth header)
+      const uploadResponse = await fetch(uploadMeta.url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(
+          `Image upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`,
+        );
+      }
+
+      // Step 3 – get the public/download URL for the stored key
+      const { data: downloadMeta } = await apiClient.get<{ url: string }>(
+        `/storage/download-url?key=${encodeURIComponent(uploadMeta.key)}`,
+      );
+
+      return { url: downloadMeta.url, key: uploadMeta.key };
     },
   });
 }
