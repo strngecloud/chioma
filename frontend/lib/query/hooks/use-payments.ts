@@ -23,6 +23,36 @@ interface CreatePaymentPayload {
   paymentMethod: Payment['paymentMethod'];
 }
 
+export interface CreateDepositPayload {
+  sourcePublicKey: string;
+  destinationPublicKey: string;
+  amount: string;
+  agreementId?: string;
+  expirationDate?: string;
+  idempotencyKey?: string;
+}
+
+export interface RequestDepositRefundPayload {
+  escrowId?: number | string;
+  paymentId?: string;
+  reason?: string;
+  amount?: number;
+}
+
+export interface DepositDeduction {
+  id: string;
+  label: string;
+  amount: number;
+  reason?: string;
+  createdAt?: string;
+}
+
+export interface DepositReceipt {
+  receipt?: unknown;
+  fileName?: string;
+  [key: string]: unknown;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function buildQueryString(params: PaymentListParams): string {
@@ -84,6 +114,49 @@ export function usePaymentsByAgreement(agreementId: string | null) {
   });
 }
 
+export function useDeposits() {
+  return useQuery({
+    queryKey: queryKeys.payments.deposits(),
+    queryFn: async () => {
+      const { data } = await apiClient.get<PaginatedResponse<Payment>>(
+        '/payments?limit=100',
+      );
+
+      return {
+        ...data,
+        data: data.data.filter(isDepositPayment),
+      };
+    },
+    refetchInterval: 30000,
+  });
+}
+
+export function useDepositStatus(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.payments.deposit(id ?? ''),
+    queryFn: async () => {
+      const { data } = await apiClient.get<Payment>(`/payments/${id}`);
+      return data;
+    },
+    enabled: Boolean(id),
+    refetchInterval: (query) =>
+      query.state.data && isFinalDepositStatus(query.state.data.status)
+        ? false
+        : 10000,
+  });
+}
+
+export function useDepositDeductions(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.payments.depositDeductions(id ?? ''),
+    queryFn: async () => {
+      const { data } = await apiClient.get<Payment>(`/payments/${id}`);
+      return readDepositDeductions(data);
+    },
+    enabled: Boolean(id),
+  });
+}
+
 // ─── Mutations ───────────────────────────────────────────────────────────────
 
 /**
@@ -118,6 +191,133 @@ export function useCreatePayment() {
   });
 }
 
+export function useCreateDeposit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: CreateDepositPayload) => {
+      const { data } = await apiClient.post<Payment>(
+        '/payments/stellar/escrow',
+        payload,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+    },
+  });
+}
+
+export function useRequestDepositRefund() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: RequestDepositRefundPayload) => {
+      if (payload.escrowId !== undefined && payload.escrowId !== null) {
+        const { data } = await apiClient.post<Payment>(
+          `/payments/stellar/escrow/${payload.escrowId}/refund`,
+          { reason: payload.reason },
+        );
+        return data;
+      }
+
+      if (!payload.paymentId || payload.amount === undefined) {
+        throw new Error('A payment ID and amount are required for refunds.');
+      }
+
+      const { data } = await apiClient.post<Payment>(
+        `/payments/${payload.paymentId}/refund`,
+        { amount: payload.amount, reason: payload.reason },
+      );
+      return data;
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all });
+      if (updated?.id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.payments.deposit(updated.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.payments.depositDeductions(updated.id),
+        });
+      }
+    },
+  });
+}
+
+export function useDownloadDepositReceipt() {
+  return useMutation({
+    mutationFn: async (paymentId: string) => {
+      const { data } = await apiClient.get<DepositReceipt>(
+        `/payments/${paymentId}/receipt`,
+      );
+      downloadReceipt(paymentId, data);
+      return data;
+    },
+  });
+}
+
+function isDepositPayment(payment: Payment): boolean {
+  const metadata = payment.metadata ?? {};
+  const flow = typeof metadata.flow === 'string' ? metadata.flow : '';
+  const type = typeof metadata.type === 'string' ? metadata.type : '';
+  const description =
+    typeof metadata.description === 'string' ? metadata.description : '';
+
+  return [flow, type, description].some((value) =>
+    value.toLowerCase().includes('deposit'),
+  );
+}
+
+function isFinalDepositStatus(status: Payment['status']): boolean {
+  return ['completed', 'failed', 'refunded', 'partial_refund'].includes(status);
+}
+
+export function readDepositDeductions(payment: Payment): DepositDeduction[] {
+  const raw = payment.metadata?.deductions;
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((item, index) => {
+      if (!item || typeof item !== 'object') return null;
+      const deduction = item as Record<string, unknown>;
+      const amount = Number(deduction.amount ?? 0);
+      if (!Number.isFinite(amount) || amount <= 0) return null;
+
+      return {
+        id: String(deduction.id ?? `${payment.id}-deduction-${index}`),
+        label: String(deduction.label ?? deduction.reason ?? 'Deposit deduction'),
+        amount,
+        reason:
+          deduction.reason === undefined ? undefined : String(deduction.reason),
+        createdAt:
+          deduction.createdAt === undefined
+            ? undefined
+            : String(deduction.createdAt),
+      };
+    })
+    .filter((item): item is DepositDeduction => item !== null);
+}
+
+function downloadReceipt(paymentId: string, receipt: DepositReceipt) {
+  if (typeof window === 'undefined') return;
+
+  const fileName =
+    typeof receipt.fileName === 'string'
+      ? receipt.fileName
+      : `deposit-receipt-${paymentId}.json`;
+  const blob = new Blob([JSON.stringify(receipt.receipt ?? receipt, null, 2)], {
+    type: 'application/json',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 // ─── Payment Methods Hooks ──────────────────────────────────────────────────
 
 export interface CreatePaymentMethodPayload {

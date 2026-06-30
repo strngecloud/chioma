@@ -23,6 +23,11 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.payments.all, 'detail', id] as const,
     byAgreement: (agreementId: string) =>
       [...queryKeys.payments.all, 'agreement', agreementId] as const,
+    deposits: () => [...queryKeys.payments.all, 'deposits'] as const,
+    deposit: (id: string) =>
+      [...queryKeys.payments.deposits(), 'detail', id] as const,
+    depositDeductions: (id: string) =>
+      [...queryKeys.payments.deposit(id), 'deductions'] as const,
   },
 
   paymentMethods: {
