@@ -28,7 +28,7 @@ class PropertyWizardService {
     if (!draft.draftId) return;
 
     try {
-      await apiClient.patch(`/property-listings/wizard/${draft.draftId}/step`, {
+      await apiClient.patch(`/properties/property-listings/wizard/${draft.draftId}/step`, {
         currentStep: draft.currentStep,
         completedSteps: draft.completedSteps,
         data: draft.propertyData,
@@ -41,7 +41,7 @@ class PropertyWizardService {
   async startDraft(initialData: PropertyData): Promise<string | null> {
     try {
       const response = await apiClient.post<{ id: string }>(
-        '/property-listings/wizard/start',
+        '/properties/property-listings/wizard/start',
         { data: initialData },
       );
       return response.data.id;
