@@ -49,6 +49,15 @@ export const queryKeys = {
       [...queryKeys.notifications.all, 'unread-count'] as const,
   },
 
+  favorites: {
+    all: ['favorites'] as const,
+    list: () => [...queryKeys.favorites.all, 'list'] as const,
+    status: (propertyId: string) =>
+      [...queryKeys.favorites.all, 'status', propertyId] as const,
+    count: (propertyId: string) =>
+      [...queryKeys.favorites.all, 'count', propertyId] as const,
+  },
+
   maintenance: {
     all: ['maintenance'] as const,
     lists: () => [...queryKeys.maintenance.all, 'list'] as const,

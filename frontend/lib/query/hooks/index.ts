@@ -23,6 +23,15 @@ export {
 } from './use-notifications';
 
 export {
+  useFavorites,
+  useFavoriteStatus,
+  useFavoriteCount,
+  useAddFavorite,
+  useRemoveFavorite,
+  useToggleFavorite,
+} from './use-favorites';
+
+export {
   useTransactions,
   useUserTransactions,
   useTransaction,
