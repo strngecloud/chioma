@@ -5,8 +5,9 @@
  * query/mutation in the app behaves consistently without per-hook config.
  */
 
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
 import { classifyUnknownError } from '@/lib/errors';
+import { useErrorStore } from '@/store/errorStore';
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,29 @@ function shouldRetry(failureCount: number, error: unknown): boolean {
   return true;
 }
 
+function handleGlobalError(error: unknown, source: string, action?: string) {
+  const appError = classifyUnknownError(error, {
+    source,
+    action,
+  });
+
+  let category: 'validation' | 'api' | 'network' | 'authentication' | 'authorization' | 'server' | 'unknown' = 'unknown';
+  if (appError.category === 'network') category = 'network';
+  else if (appError.category === 'validation') category = 'validation';
+  else if (appError.category === 'authentication') category = 'authentication';
+  else if (appError.category === 'permission') category = 'authorization';
+  else if (appError.category === 'system') category = 'server';
+  else if (appError.category === 'business') category = 'api';
+
+  useErrorStore.getState().addError({
+    message: appError.userMessage,
+    category,
+    severity: appError.severity,
+    autoDismissMs: appError.severity === 'critical' ? undefined : 5000,
+    cause: appError.cause,
+  });
+}
+
 // ─── Factory ─────────────────────────────────────────────────────────────────
 
 /**
@@ -37,6 +61,18 @@ function shouldRetry(failureCount: number, error: unknown): boolean {
  */
 export function createQueryClient(): QueryClient {
   return new QueryClient({
+    queryCache: new QueryCache({
+      onError: (error, query) => {
+        if (query.meta?.disableGlobalError) return;
+        handleGlobalError(error, 'QueryCache', query.queryKey.join(' / '));
+      },
+    }),
+    mutationCache: new MutationCache({
+      onError: (error, variables, context, mutation) => {
+        if (mutation.meta?.disableGlobalError) return;
+        handleGlobalError(error, 'MutationCache');
+      },
+    }),
     defaultOptions: {
       queries: {
         staleTime: STALE_TIME_MS,
