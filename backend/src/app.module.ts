@@ -264,6 +264,7 @@ const appLogger = new Logger('AppModule');
   providers: [
     AppService,
     JobQueueService,
+    CompressionService,
     {
       provide: 'APP_PIPE',
       useClass: ValidationPipe,
@@ -288,6 +289,10 @@ const appLogger = new Logger('AppModule');
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+
+    consumer.apply(CompressionMiddleware).forRoutes('*');
+
     consumer.apply(LocalizationMiddleware).forRoutes('*');
 
     // Security headers middleware (applied to all routes)
