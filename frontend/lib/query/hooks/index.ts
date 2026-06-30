@@ -86,3 +86,11 @@ export type {
   CacheInvalidationConfig,
   UseCacheInvalidationResult,
 } from './use-cache-invalidation';
+
+export {
+  useSearchProperties,
+  useSearchUsers,
+  useSearchDocuments,
+  useSearchSuggest,
+} from './use-properties';
+export type { PropertySearchParams } from './use-properties';
