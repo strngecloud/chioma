@@ -161,6 +161,16 @@ export const queryKeys = {
       [...queryKeys.analytics.all, 'landlord-overview', days] as const,
   },
 
+  search: {
+    all: ['search'] as const,
+    properties: (filters: object) =>
+      [...queryKeys.search.all, 'properties', filters] as const,
+    users: (filters: object) =>
+      [...queryKeys.search.all, 'users', filters] as const,
+    documents: (filters: object) =>
+      [...queryKeys.search.all, 'documents', filters] as const,
+    suggest: (query: string) =>
+      [...queryKeys.search.all, 'suggest', query] as const,
   documents: {
     all: ['documents'] as const,
     lists: () => [...queryKeys.documents.all, 'list'] as const,

@@ -112,6 +112,12 @@ export type {
 } from './use-cache-invalidation';
 
 export {
+  useSearchProperties,
+  useSearchUsers,
+  useSearchDocuments,
+  useSearchSuggest,
+} from './use-properties';
+export type { PropertySearchParams } from './use-properties';
   useLandlordDocuments,
   useSharedDocuments,
   useDocument,

@@ -419,6 +419,71 @@ export interface Role {
   updatedAt: string;
 }
 
+// Search Types
+export interface SearchFilters {
+  query?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  type?: string;
+  status?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  isFurnished?: boolean;
+  hasParking?: boolean;
+  petsAllowed?: boolean;
+  amenities?: string[];
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface UserSearchFilters {
+  query?: string;
+  role?: string;
+  isActive?: boolean;
+  kycVerified?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface DocumentSearchFilters {
+  query?: string;
+  status?: string;
+  propertyId?: string;
+  userId?: string;
+  adminId?: string;
+  minRent?: number;
+  maxRent?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface SearchFacets {
+  types: Array<{ type: string; count: number }>;
+  cities: Array<{ city: string; count: number }>;
+  priceRanges: Array<{ label: string; min: number; max: number; count: number }>;
+  amenities: { furnished: number; parking: number; petsAllowed: number };
+}
+
+export interface SearchResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  facets: SearchFacets;
+}
+
+export interface SearchSuggestResult {
+  suggestions: string[];
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   data: T;
