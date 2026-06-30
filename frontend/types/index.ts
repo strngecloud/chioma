@@ -121,12 +121,18 @@ export interface Payment {
   agreement?: RentalAgreement;
   amount: number;
   currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: 'pending' | 'completed' | 'failed' | 'refunded' | 'partial_refund';
   paymentMethod: 'card' | 'bank_transfer' | 'crypto';
   transactionId?: string;
   blockchainTxHash?: string;
   dueDate: string;
   paidAt?: string;
+  referenceNumber?: string | null;
+  refundAmount?: number;
+  refundStatus?: string | null;
+  refundReason?: string | null;
+  receiptUrl?: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
 }
 
