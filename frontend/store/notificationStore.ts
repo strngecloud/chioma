@@ -26,9 +26,9 @@ interface NotificationState {
 
 interface NotificationActions {
   /** Load notifications from the API. */
-  fetchNotifications: () => Promise<void>;
+  fetchNotifications: (page?: number, limit?: number) => Promise<void>;
   /** Mark a single notification as read. */
-  markAsRead: (id: string) => void;
+  markAsRead: (id: string) => Promise<void>;
   /** Mark a single notification as unread. */
   markAsUnread: (id: string) => void;
   /** Mark every notification as read. */
