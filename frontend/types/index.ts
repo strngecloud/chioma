@@ -130,6 +130,18 @@ export interface Payment {
   createdAt: string;
 }
 
+export interface PaymentMethod {
+  id: number;
+  userId: string;
+  paymentType: string;
+  lastFour: string;
+  expiryDate?: string;
+  isDefault: boolean;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Maintenance Types
 export interface MaintenanceRequest {
   id: string;
