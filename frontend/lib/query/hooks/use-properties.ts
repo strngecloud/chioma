@@ -222,6 +222,7 @@ export interface PropertySearchParams {
   limit?: string;
   sortBy?: string;
   sortOrder?: string;
+  [key: string]: string | undefined;
 }
 
 function buildSearchQueryString(params: PropertySearchParams): string {

@@ -32,11 +32,11 @@ const propertyTypes: FilterOption[] = [
 ];
 
 const POPULAR_TAGS = [
-  { label: 'Verified Only', filter: 'verified' },
-  { label: 'Pets Allowed', filter: 'petsAllowed' },
+  { label: 'Verified Only', filter: 'verified only' },
+  { label: 'Pets Allowed', filter: 'pets allowed' },
   { label: 'Parking', filter: 'parking' },
-  { label: 'Furnished', filter: 'furnished' },
   { label: 'Gym', filter: 'gym' },
+  { label: 'Internet Included', filter: 'internet included' },
 ] as const;
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -126,7 +126,7 @@ export default function PropertySearchFilters() {
     if (selectedType && selectedType !== 'all') {
       newFilters.propertyType = selectedType as import('@/types').PropertyType;
     }
-    if (activeTags.has('petsAllowed')) newFilters.petsAllowed = true;
+    if (activeTags.has('pets allowed')) newFilters.petsAllowed = true;
     if (activeTags.has('parking')) newFilters.hasParking = true;
 
     setFilters(newFilters);

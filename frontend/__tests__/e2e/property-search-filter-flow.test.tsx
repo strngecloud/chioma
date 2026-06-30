@@ -25,6 +25,14 @@ import {
 } from '@testing-library/react';
 import React from 'react';
 
+// IntersectionObserver is not available in JSDOM
+global.IntersectionObserver = class MockIntersectionObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+  constructor(_cb: IntersectionObserverCallback) {}
+} as unknown as typeof IntersectionObserver;
+
 // ─── Deterministic fixture data ───────────────────────────────────────────────
 import {
   E2E_PROPERTIES,
@@ -35,14 +43,15 @@ import { toPropertyCardShape } from '@/lib/utils/property-adapter';
 // ─── Next.js stubs ────────────────────────────────────────────────────────────
 const mockRouterReplace = vi.fn();
 const mockRouterPush = vi.fn();
+// Stable reference so the useEffect([searchParams]) in page.tsx doesn't fire
+// on every re-render and reset searchQuery back to ''.
+const stableSearchParams = { get: (_key: string) => null };
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(() => ({
     replace: mockRouterReplace,
     push: mockRouterPush,
   })),
-  useSearchParams: vi.fn(() => ({
-    get: vi.fn((_key: string) => null),
-  })),
+  useSearchParams: vi.fn(() => stableSearchParams),
 }));
 vi.mock('next/dynamic', () => ({
   default: (_fn: () => Promise<unknown>, _opts?: unknown) => {
@@ -102,11 +111,23 @@ vi.mock('@/lib/query/hooks/use-properties', async (importOriginal) => {
   };
 });
 
+vi.mock('@/lib/query/hooks', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/lib/query/hooks')>();
+  return {
+    ...actual,
+    useInfiniteProperties: vi.fn(() => mockHookReturnValue),
+    useSearchSuggest: vi.fn(() => ({ data: undefined })),
+    useFavoriteStatus: vi.fn(() => ({ data: undefined })),
+    useToggleFavorite: vi.fn(() => ({ isPending: false, toggleFavorite: vi.fn() })),
+  };
+});
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function makeSuccessHook(properties = E2E_PROPERTIES) {
   return {
     data: {
-      pages: [{ ...E2E_PAGINATED_RESPONSE, data: properties }],
+      pages: [{ ...E2E_PAGINATED_RESPONSE, data: properties, total: properties.length }],
       pageParams: [1],
     },
     fetchNextPage: mockFetchNextPage,

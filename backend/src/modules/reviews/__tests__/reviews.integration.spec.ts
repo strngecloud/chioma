@@ -530,7 +530,7 @@ describe('ReviewsService - Integration Tests', () => {
       );
 
       expect(updated.comment).toBe('Updated guest review');
-      expect(updated.cleanliness).toBe(5);
+      expect((updated as GuestReview).cleanliness).toBe(5);
     });
 
     it('allows the author to update a host review', async () => {
@@ -555,7 +555,7 @@ describe('ReviewsService - Integration Tests', () => {
       );
 
       expect(updated.comment).toBe('Updated host review');
-      expect(updated.cleanliness).toBe(5);
+      expect((updated as GuestReview).cleanliness).toBe(5);
     });
 
     it('rejects review updates from unauthorized users', async () => {

@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UnauthorizedException, ConflictException } from '@nestjs/common';
-import { OAuth2Service } from '../oauth2.service';
-import { OAuth2ClientService } from '../oauth2-client.service';
-import { AuthService } from '../../auth.service';
-import { User } from '../../../users/entities/user.entity';
-import { OAuthAccount } from '../entities/oauth-account.entity';
-import { OAuth2Provider } from '../oauth2.types';
+import { OAuth2Service } from './oauth2.service';
+import { OAuth2ClientService } from './oauth2-client.service';
+import { AuthService } from '../auth.service';
+import { User } from '../../users/entities/user.entity';
+import { OAuthAccount } from './entities/oauth-account.entity';
+import { OAuth2Provider } from './oauth2.types';
 
 describe('OAuth2Service', () => {
   let service: OAuth2Service;

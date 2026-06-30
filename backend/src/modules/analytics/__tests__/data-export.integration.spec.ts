@@ -345,7 +345,7 @@ describe('Analytics Data Export Integration Tests', () => {
       monthlyDiscount: 10,
       cleaningFee: 25,
       metadata: { privateNotes: 'owner-only', ownerEmail: 'owner@example.com' },
-    } as Property);
+    } as unknown as Property);
 
     const cityHouse = await propertyRepository.save({
       title: 'City Loft',
@@ -377,7 +377,7 @@ describe('Analytics Data Export Integration Tests', () => {
       monthlyDiscount: 0,
       cleaningFee: 15,
       metadata: { ownerEmail: 'owner@example.com', internalCode: 'A1' },
-    } as Property);
+    } as unknown as Property);
 
     await inquiryRepository.save({
       propertyId: beachfront.id,
