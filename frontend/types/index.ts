@@ -38,28 +38,49 @@ export interface UserActivity {
   createdAt: string;
 }
 
-// Property Types
+// Property Types — aligned with backend entity (ListingStatus / PropertyType enums)
+export type PropertyType = 'apartment' | 'house' | 'commercial' | 'land' | 'other';
+export type ListingStatus = 'draft' | 'published' | 'rented' | 'archived';
+
 export interface Property {
   id: string;
   title: string;
   description: string;
+  /** Street address */
   address: string;
   city: string;
   state: string;
+  postalCode?: string;
   country: string;
+  latitude?: number;
+  longitude?: number;
   price: number;
+  currency?: string;
   bedrooms: number;
   bathrooms: number;
-  squareFeet: number;
-  propertyType: 'apartment' | 'house' | 'condo' | 'studio';
-  status: 'available' | 'rented' | 'maintenance';
+  /** Area in square metres (backend field name) */
+  area: number;
+  /** Alias kept for backward compatibility */
+  squareFeet?: number;
+  floor?: number;
+  type: PropertyType;
+  /** @deprecated Use `type` — kept for backward compatibility */
+  propertyType?: PropertyType;
+  status: ListingStatus;
+  isFurnished?: boolean;
+  hasParking?: boolean;
+  petsAllowed?: boolean;
   images: PropertyImage[];
   amenities: PropertyAmenity[];
-  landlordId: string;
+  /** Owner UUID (backend: ownerId) */
+  ownerId: string;
+  /** @deprecated Use `ownerId` — kept for backward compatibility */
+  landlordId?: string;
+  owner?: User;
+  /** @deprecated Use `owner` — kept for backward compatibility */
   landlord?: User;
   createdAt: string;
   updatedAt: string;
-  /** API-aligned optional fields (Nest/TypeORM property listing) */
   viewCount?: number;
   favoriteCount?: number;
   lastViewedAt?: string | null;

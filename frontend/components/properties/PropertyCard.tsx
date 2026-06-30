@@ -80,7 +80,12 @@ export default function PropertyCard({
   };
 
   return (
-    <div onClick={handlePropertyClick} className="block group cursor-pointer">
+    <div
+      onClick={handlePropertyClick}
+      className="block group cursor-pointer"
+      data-testid="property-card"
+      data-property-id={String(property.id)}
+    >
       <div
         className={`glass-card rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 ${
           isList ? 'flex flex-col sm:flex-row h-full' : 'flex flex-col h-full'
