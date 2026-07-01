@@ -11,6 +11,9 @@ import {
   Property,
   ListingStatus,
 } from '../../properties/entities/property.entity';
+import { PropertyImage } from '../../properties/entities/property-image.entity';
+import { PropertyAmenity } from '../../properties/entities/property-amenity.entity';
+import { RentalUnit } from '../../properties/entities/rental-unit.entity';
 import {
   PropertyInquiry,
   PropertyInquiryStatus,
@@ -258,11 +261,11 @@ describe('Analytics Data Export Integration Tests', () => {
         TypeOrmModule.forRoot({
           type: 'sqlite',
           database: ':memory:',
-          entities: [User, Property, PropertyInquiry],
+          entities: [User, Property, PropertyImage, PropertyAmenity, RentalUnit, PropertyInquiry],
           synchronize: true,
           dropSchema: true,
         }),
-        TypeOrmModule.forFeature([Property, PropertyInquiry]),
+        TypeOrmModule.forFeature([Property, PropertyImage, PropertyAmenity, RentalUnit, PropertyInquiry]),
         AnalyticsModule,
       ],
       providers: [

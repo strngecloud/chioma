@@ -33,7 +33,7 @@ export class User {
 
   @Column({
     name: 'email_encrypted',
-    type: 'bytea',
+    type: process.env.DB_TYPE === 'sqlite' ? 'blob' : 'bytea',
     nullable: true,
     select: false,
   })

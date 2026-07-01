@@ -10,6 +10,9 @@ import {
   AgreementStatus,
   RentAgreement,
 } from '../../rent/entities/rent-contract.entity';
+import { Payment } from '../../rent/entities/payment.entity';
+import { RentObligationNft } from '../../agreements/entities/rent-obligation-nft.entity';
+import { NFTTransfer } from '../../agreements/entities/nft-transfer.entity';
 import { PostGuestReviewDto } from '../dto/post-guest-review.dto';
 import { PostHostReviewDto } from '../dto/post-host-review.dto';
 import {
@@ -48,7 +51,7 @@ describe('ReviewsService - Integration Tests', () => {
         TypeOrmModule.forRoot({
           type: 'sqlite',
           database: ':memory:',
-          entities: [Review, GuestReview, HostReview, RentAgreement],
+          entities: [Review, GuestReview, HostReview, RentAgreement, Payment, RentObligationNft, NFTTransfer],
           synchronize: true,
           dropSchema: true,
         }),
@@ -57,6 +60,9 @@ describe('ReviewsService - Integration Tests', () => {
           GuestReview,
           HostReview,
           RentAgreement,
+          Payment,
+          RentObligationNft,
+          NFTTransfer,
         ]),
       ],
       providers: [ReviewsService],
