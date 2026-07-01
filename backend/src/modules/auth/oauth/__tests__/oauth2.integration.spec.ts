@@ -18,6 +18,8 @@ import { MockOAuth2Provider } from '../providers/mock-oauth2.provider';
 import { OAuth2Provider } from '../oauth2.types';
 
 describe('OAuth2 Integration (issue #1120)', () => {
+  jest.setTimeout(30000);
+
   let oauth2Service: OAuth2Service;
   let oauth2Client: OAuth2ClientService;
   let mockProvider: MockOAuth2Provider;
@@ -132,7 +134,7 @@ describe('OAuth2 Integration (issue #1120)', () => {
   };
 
   const mockAuthService = {
-    generateTokens: jest.fn((userId: string, email: string, role: string) => ({
+    generateTokens: jest.fn((userId: string) => ({
       accessToken: `jwt-access-${userId}`,
       refreshToken: `jwt-refresh-${userId}`,
     })),

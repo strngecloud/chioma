@@ -13,6 +13,8 @@ import { UserRole } from '../../users/entities/user.entity';
 import { PaymentGatewayService } from '../payment-gateway.service';
 import { LockService } from '../../../common/lock';
 import { IdempotencyService } from '../../../common/idempotency';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { FraudHooksService } from '../../fraud/fraud-hooks.service';
 
 /**
  * Utility Bill Integration Tests
@@ -80,11 +82,11 @@ describe('Utility Bill Integration Tests', () => {
         PaymentService,
         PaymentGatewayService,
         {
-          provide: 'NotificationsService',
+          provide: NotificationsService,
           useValue: mockNotificationsService,
         },
         {
-          provide: 'FraudHooksService',
+          provide: FraudHooksService,
           useValue: mockFraudHooksService,
         },
         {
