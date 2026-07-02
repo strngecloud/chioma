@@ -1,3 +1,8 @@
+// Must run before the User entity is imported: its encrypted columns pick
+// bytea (Postgres) vs blob (SQLite) at decoration time based on this value,
+// and this suite uses an in-memory SQLite database.
+process.env.DB_TYPE = 'sqlite';
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -15,6 +20,9 @@ import { LockService } from '../../../common/lock';
 import { IdempotencyService } from '../../../common/idempotency';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { FraudHooksService } from '../../fraud/fraud-hooks.service';
+import { PaymentProcessingService } from '../../stellar/services/payment-processing.service';
+import { StellarService } from '../../stellar/services/stellar.service';
+import { RetryService } from '../../../common/services/retry.service';
 
 /**
  * Utility Bill Integration Tests
@@ -81,6 +89,7 @@ describe('Utility Bill Integration Tests', () => {
       providers: [
         PaymentService,
         PaymentGatewayService,
+        RetryService,
         {
           provide: NotificationsService,
           useValue: mockNotificationsService,
@@ -90,13 +99,13 @@ describe('Utility Bill Integration Tests', () => {
           useValue: mockFraudHooksService,
         },
         {
-          provide: 'PaymentProcessingService',
+          provide: PaymentProcessingService,
           useValue: {
             processRentPayment: jest.fn(),
           },
         },
         {
-          provide: 'StellarService',
+          provide: StellarService,
           useValue: {
             createEscrow: jest.fn(),
             releaseEscrow: jest.fn(),
@@ -108,15 +117,21 @@ describe('Utility Bill Integration Tests', () => {
         {
           provide: LockService,
           useValue: {
-            acquire: jest.fn().mockResolvedValue(true),
-            release: jest.fn().mockResolvedValue(true),
+            acquireLock: jest.fn().mockResolvedValue('mock-lock-token'),
+            releaseLock: jest.fn().mockResolvedValue(true),
+            withLock: jest.fn(
+              (_key: string, _ttlMs: number, fn: () => unknown) => fn(),
+            ),
           },
         },
         {
           provide: IdempotencyService,
           useValue: {
-            check: jest.fn().mockResolvedValue(null),
-            store: jest.fn().mockResolvedValue(true),
+            retrieve: jest.fn().mockResolvedValue(null),
+            store: jest.fn().mockResolvedValue(undefined),
+            process: jest.fn(
+              (_key: string, _ttlMs: number, fn: () => unknown) => fn(),
+            ),
           },
         },
       ],
@@ -140,8 +155,8 @@ describe('Utility Bill Integration Tests', () => {
 
   afterEach(async () => {
     if (dataSource && dataSource.isInitialized) {
-      await dataSource.getRepository(PaymentSchedule).delete({});
-      await dataSource.getRepository(Payment).delete({});
+      await dataSource.getRepository(PaymentSchedule).clear();
+      await dataSource.getRepository(Payment).clear();
     }
   });
 
@@ -570,6 +585,11 @@ describe('Utility Bill Integration Tests', () => {
         },
         testUser.id,
       );
+
+      // SQLite's CURRENT_TIMESTAMP has whole-second resolution, so back-to-back
+      // inserts can otherwise land on the same createdAt and make DESC order
+      // among ties insertion-order-dependent instead of newest-first.
+      await new Promise((resolve) => setTimeout(resolve, 1100));
 
       await paymentService.recordPayment(
         {
