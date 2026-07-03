@@ -27,6 +27,7 @@ const authState: AuthStore = {
   user: {
     id: 'u-1',
     email: 'a@b.com',
+    emailVerified: true,
     firstName: 'A',
     lastName: 'B',
     role: 'user',
@@ -42,6 +43,7 @@ const authState: AuthStore = {
   refreshSession: async () => ({ success: true as const }),
   setTokens: () => {},
   setWalletAddress: () => {},
+  completeProfile: async () => ({ success: true }),
   hydrate: () => {},
 };
 

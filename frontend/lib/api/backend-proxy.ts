@@ -4,7 +4,7 @@ export function getBackendApiBase(): string {
   return (
     process.env.BACKEND_API_BASE_URL ??
     process.env.NEXT_PUBLIC_BACKEND_API_BASE_URL ??
-    'http://localhost:5000/api'
+    'http://localhost:5000/api/v1'
   ).replace(/\/$/, '');
 }
 

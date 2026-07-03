@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import nextDynamic from 'next/dynamic';
-import Footer from '@/components/Footer';
+import Footer from '@/components/landing/Footer';
 import Navbar from '@/components/Navbar';
 import PropertyCardSkeleton from '@/components/PropertyCardSkeleton';
 import PropertyCard from '@/components/properties/PropertyCard';

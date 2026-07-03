@@ -4,7 +4,11 @@ import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import { createDatabaseConnectionOptions } from './database-config';
 
-dotenv.config();
+// Mirror AppModule's ConfigModule.forRoot({ envFilePath: [`.env.${NODE_ENV}`, '.env'] })
+// so migrations/seeds always target the same database as the running server.
+dotenv.config({
+  path: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
+});
 
 /** e.g. .../src or .../dist/src */
 const rootDir = path.join(__dirname, '..');

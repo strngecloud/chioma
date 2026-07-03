@@ -183,7 +183,7 @@ const Navbar = ({ theme = 'dark' }: NavbarProps) => {
               </Link>
               <Link
                 href="/signup"
-                className="px-5 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors"
+                className="px-5 py-2 text-sm font-semibold bg-brass-500 hover:bg-brass-400 text-ink-950 rounded-xl transition-colors"
               >
                 Get started
               </Link>
@@ -259,7 +259,7 @@ const Navbar = ({ theme = 'dark' }: NavbarProps) => {
                   <Link
                     href="/signup"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="px-4 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold text-center"
+                    className="px-4 py-3 rounded-xl bg-brass-500 text-ink-950 text-sm font-semibold text-center"
                   >
                     Get started
                   </Link>

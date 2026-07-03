@@ -27,9 +27,13 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  /**
+   * Nullable: wallet-only sign-ups have no email until they complete
+   * onboarding via POST /auth/complete-profile.
+   */
   @Index()
-  @Column({ type: 'varchar', unique: true })
-  email: string;
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  email: string | null;
 
   @Column({
     name: 'email_encrypted',

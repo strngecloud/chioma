@@ -125,7 +125,7 @@ export class OAuth2ClientService {
       'chioma-test-secret';
     const defaultRedirectUri =
       this.configService.get<string>('OAUTH2_REDIRECT_URI') ??
-      'http://localhost:3001/auth/oauth/callback';
+      'http://localhost:3000/oauth/callback';
 
     const sharedConfig: OAuth2ProviderConfig = {
       baseUrl,

@@ -27,6 +27,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { CompleteProfileDto } from './dto/complete-profile.dto';
 import { AuthResponseDto, MessageResponseDto } from './dto/auth-response.dto';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -475,6 +476,33 @@ export class AuthController {
     @Query() verifyEmailDto: VerifyEmailDto,
   ): Promise<MessageResponseDto> {
     return this.authService.verifyEmail(verifyEmailDto.token);
+  }
+
+  @Post('complete-profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Attach an email to a wallet-only account',
+    description:
+      'Completes onboarding for wallet-based sign-ins by adding an email address and sending a verification link.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile saved, verification email sent',
+    type: MessageResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Email already registered to another account',
+    type: ErrorResponseDto,
+  })
+  async completeProfile(
+    @CurrentUser() user: User,
+    @Body() completeProfileDto: CompleteProfileDto,
+  ): Promise<MessageResponseDto> {
+    return this.authService.completeProfile(user.id, completeProfileDto);
   }
 
   @Post('mfa/enable')

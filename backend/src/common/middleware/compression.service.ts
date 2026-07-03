@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { promisify } from 'util';
 import * as zlib from 'zlib';
 
@@ -34,7 +34,7 @@ export class CompressionService {
     bytesAfterCompression: 0,
   };
 
-  constructor(options: Partial<CompressionOptions> = {}) {
+  constructor(@Optional() options: Partial<CompressionOptions> = {}) {
     this.options = {
       threshold: options.threshold ?? 1024,
       encodings: options.encodings ?? ['br', 'gzip', 'deflate', 'identity'],

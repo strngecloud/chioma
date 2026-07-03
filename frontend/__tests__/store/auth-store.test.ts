@@ -27,6 +27,7 @@ function resetStore() {
 const mockUser = {
   id: 'u-1',
   email: 'alice@chioma.local',
+  emailVerified: true,
   firstName: 'Alice',
   lastName: 'Smith',
   role: 'user' as const,

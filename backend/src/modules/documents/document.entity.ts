@@ -40,16 +40,16 @@ export class Document {
   @Column()
   fileType: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   propertyId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   tenantId: string | null;
 
   @Column()
   ownerId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   description: string | null;
 
   @Column({ type: 'simple-array', nullable: true })

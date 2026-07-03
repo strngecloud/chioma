@@ -24,7 +24,7 @@ describe('OAuth2 Integration (issue #1120)', () => {
   let oauth2Client: OAuth2ClientService;
   let mockProvider: MockOAuth2Provider;
 
-  const redirectUri = 'http://localhost:3001/auth/oauth/callback';
+  const redirectUri = 'http://localhost:3000/oauth/callback';
   const providerConfig = {
     baseUrl: 'https://mock-oauth.test',
     clientId: 'chioma-test-client',
@@ -284,7 +284,7 @@ describe('OAuth2 Integration (issue #1120)', () => {
 
       const profile = {
         ...googleProfile,
-        email: existingUser.email,
+        email: existingUser.email ?? '',
         id: 'google-existing-999',
       };
 

@@ -12,6 +12,7 @@ import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { CompleteProfileDto } from './dto/complete-profile.dto';
 import {
   AuthSuccessResponseDto,
   MfaRequiredResponseDto,
@@ -113,7 +114,7 @@ export class AuthService {
 
     // Send verification email asynchronously
     this.emailService
-      .sendVerificationEmail(savedUser.email, verificationToken)
+      .sendVerificationEmail(normalizedEmail, verificationToken)
       .catch((error) =>
         this.logger.error(
           `Failed to send verification email for ${savedUser.email}`,
@@ -302,8 +303,9 @@ export class AuthService {
     forgotPasswordDto: ForgotPasswordDto,
   ): Promise<MessageResponseDto> {
     const { email } = forgotPasswordDto;
+    const normalizedEmail = email.toLowerCase();
 
-    const user = await this.findUserByEmail(email.toLowerCase());
+    const user = await this.findUserByEmail(normalizedEmail);
 
     if (!user) {
       this.logger.warn(
@@ -331,7 +333,7 @@ export class AuthService {
 
     // Send password reset email asynchronously
     this.emailService
-      .sendPasswordResetEmail(user.email, resetToken)
+      .sendPasswordResetEmail(normalizedEmail, resetToken)
       .catch((error) =>
         this.logger.error(
           `Failed to send password reset email for ${user.email}`,
@@ -423,6 +425,54 @@ export class AuthService {
     };
   }
 
+  /**
+   * Attaches an email address (and optionally a name) to a wallet-only
+   * account, then sends a verification link through the same flow used
+   * during normal registration.
+   */
+  async completeProfile(
+    userId: string,
+    dto: CompleteProfileDto,
+  ): Promise<MessageResponseDto> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new ValidationError('User not found');
+    }
+
+    const normalizedEmail = dto.email.toLowerCase();
+    const existingUser = await this.findUserByEmail(normalizedEmail, true);
+
+    if (existingUser && existingUser.id !== user.id) {
+      throw new DuplicateEntryError('Email already registered');
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
+    user.email = normalizedEmail;
+    user.emailHash = this.hashLookupValue(normalizedEmail);
+    user.emailVerified = false;
+    user.verificationToken = verificationToken;
+    if (dto.firstName) user.firstName = dto.firstName;
+    if (dto.lastName) user.lastName = dto.lastName;
+
+    await this.userRepository.save(user);
+    this.logger.log(`Profile completed for wallet user: ${user.id}`);
+
+    this.emailService
+      .sendVerificationEmail(normalizedEmail, verificationToken)
+      .catch((error) =>
+        this.logger.error(
+          `Failed to send verification email for ${normalizedEmail}`,
+          error,
+        ),
+      );
+
+    return {
+      message: 'Profile saved. Check your inbox to verify your email.',
+    };
+  }
+
   async logout(userId: string): Promise<MessageResponseDto> {
     await this.userRepository.update({ id: userId }, { refreshToken: null });
     this.logger.log(`User logged out: ${userId}`);
@@ -469,7 +519,7 @@ export class AuthService {
 
   public generateTokens(
     userId: string,
-    email: string,
+    email: string | null,
     role: string,
   ): { accessToken: string; refreshToken: string } {
     const accessToken = this.jwtService.sign(

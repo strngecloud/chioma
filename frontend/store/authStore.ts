@@ -10,6 +10,7 @@ import { withMiddleware } from './middleware';
 export interface User {
   id: string;
   email: string;
+  emailVerified: boolean;
   firstName: string;
   lastName: string;
   role: 'admin' | 'user';
@@ -30,12 +31,14 @@ interface RegisterPayload {
   lastName: string;
   email: string;
   password: string;
-  role?: 'user' | 'admin';
+  /** Backend requires an explicit role; public signup only offers non-admin roles. */
+  role: 'user' | 'agent';
 }
 
 interface AuthApiUser {
   id: string;
-  email: string;
+  email: string | null;
+  emailVerified?: boolean;
   firstName: string | null;
   lastName: string | null;
   role: string;
@@ -76,6 +79,11 @@ interface AuthActions {
     user: User,
   ) => void;
   setWalletAddress: (address: string | null) => void;
+  completeProfile: (payload: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+  }) => Promise<AuthResult>;
   hydrate: () => void;
 }
 
@@ -187,7 +195,8 @@ function persistAuth(
 function normalizeUser(user: AuthApiUser): User {
   return {
     id: user.id,
-    email: user.email,
+    email: user.email ?? '',
+    emailVerified: user.emailVerified ?? false,
     firstName: user.firstName ?? '',
     lastName: user.lastName ?? '',
     role: user.role === 'admin' ? 'admin' : 'user',
@@ -256,6 +265,43 @@ export const useAuthStore = create<AuthStore>()(
         set((state) => {
           state.walletAddress = address;
         });
+      },
+
+      completeProfile: async (payload): Promise<AuthResult> => {
+        try {
+          await apiClient.post<MessageResponse>(
+            '/auth/complete-profile',
+            payload,
+          );
+
+          const currentUser = get().user;
+          if (currentUser) {
+            const updatedUser: User = {
+              ...currentUser,
+              email: payload.email,
+              emailVerified: false,
+              firstName: payload.firstName || currentUser.firstName,
+              lastName: payload.lastName || currentUser.lastName,
+            };
+            localStorage.setItem(
+              AUTH_STORAGE_KEYS.USER,
+              JSON.stringify(updatedUser),
+            );
+            set((state) => {
+              state.user = updatedUser;
+            });
+          }
+
+          return { success: true };
+        } catch (error) {
+          return {
+            success: false,
+            error: getErrorMessage(
+              error,
+              'Could not save your profile. Please try again.',
+            ),
+          };
+        }
       },
 
       login: async (email: string, password: string): Promise<AuthResult> => {

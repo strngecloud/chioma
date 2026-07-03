@@ -22,6 +22,11 @@ export class PerformanceMiddleware implements NestMiddleware {
     const originalEnd = res.end;
     const originalSend = res.send;
 
+    // `.bind(res)` below makes `this` resolve to the Express response object
+    // (needed to call originalEnd/originalSend with the right receiver) — so
+    // class members must be reached through this closure instead of `this`.
+    const middleware = this;
+
     // Override res.end to capture timing
     res.end = function (chunk?: any, encoding?: any) {
       const endTime = Date.now();
@@ -45,17 +50,17 @@ export class PerformanceMiddleware implements NestMiddleware {
 
         // Only record metrics for API endpoints (not static files)
         if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
-          this.performanceMonitor.recordRequestMetrics(performanceMetrics);
+          middleware.performanceMonitor.recordRequestMetrics(performanceMetrics);
         }
 
         // Log errors
         if (res.statusCode >= 400) {
-          this.logger.warn(
+          middleware.logger.warn(
             `Error response: ${req.method} ${req.path} - ${responseTime}ms (Status: ${res.statusCode})`,
           );
         }
       } catch (error) {
-        this.logger.error('Failed to record performance metrics:', error);
+        middleware.logger.error('Failed to record performance metrics:', error);
       }
 
       // Call the original end method
@@ -84,16 +89,16 @@ export class PerformanceMiddleware implements NestMiddleware {
         };
 
         if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
-          this.performanceMonitor.recordRequestMetrics(performanceMetrics);
+          middleware.performanceMonitor.recordRequestMetrics(performanceMetrics);
         }
 
         if (res.statusCode >= 400) {
-          this.logger.warn(
+          middleware.logger.warn(
             `Error response: ${req.method} ${req.path} - ${responseTime}ms (Status: ${res.statusCode})`,
           );
         }
       } catch (error) {
-        this.logger.error('Failed to record performance metrics:', error);
+        middleware.logger.error('Failed to record performance metrics:', error);
       }
 
       // Call the original send method

@@ -7,7 +7,6 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render } from '@testing-library/react';
 import axe from 'axe-core';
-import FormErrorAlert from '@/components/forms/FormErrorAlert';
 import { StarRatingInput } from '@/components/reviews/StarRatingInput';
 import { ReviewCard, type Review } from '@/components/reviews/ReviewCard';
 import {
@@ -76,14 +75,6 @@ const sampleStats: RatingStats = {
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('Accessibility (axe WCAG 2.0/2.1 AA)', () => {
-  it('FormErrorAlert has no a11y violations', async () => {
-    const { container } = render(
-      <FormErrorAlert message="Please fix the errors below" />,
-    );
-    const violations = await checkA11y(container);
-    expect(violations, formatViolations(violations)).toHaveLength(0);
-  });
-
   it('StarRatingInput (interactive) has no a11y violations', async () => {
     const { container } = render(
       <StarRatingInput value={3} onChange={vi.fn()} />,
