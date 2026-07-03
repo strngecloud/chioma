@@ -187,4 +187,10 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.documents.all, 'detail', id] as const,
     shared: () => [...queryKeys.documents.all, 'shared'] as const,
   },
+
+  stellarAccounts: {
+    all: ['stellar-accounts'] as const,
+    network: (publicKey: string) =>
+      [...queryKeys.stellarAccounts.all, 'network', publicKey] as const,
+  },
 } as const;
