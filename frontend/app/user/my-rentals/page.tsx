@@ -90,7 +90,6 @@ export default function MyRentalsPage() {
 
   useEffect(() => {
     void fetchRentals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
 
   if (loading) {
